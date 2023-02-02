@@ -154,7 +154,7 @@ def train_model(model, train_ds, val_ds):
         restore_best_weights=True),
   ]
 
-  epochs = 50
+  epochs = 200
 
   history = model.fit(
       train_ds,

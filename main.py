@@ -62,11 +62,13 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, val
 
   model.save_weights(save_model_path)
 
-  plt.plot(history.epoch, history.history['loss'], label='total loss')
+  plt.plot(history.epoch, history.history['loss'], label='total training loss')
+  plt.figure()
+  plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
   plt.show()
   return model
 
-def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, temperature=2, num_predictions=120):
+def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, instrument, temperature=2, num_predictions=120):
 
   sample_notes = np.stack([raw_notes[key] for key in key_order], axis=1)
 
@@ -92,48 +94,92 @@ def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, te
   
     
   out_pm = notes_to_midi(
-      generated_notes, out_file=out_file, instrument_name="steel drums")
+      generated_notes, out_file=out_file, instrument_name=instrument)
 
   return generated_notes
 
 
 
-def main(train_model):
+def main(train_model=False, train_set=None, val_set=None, save_model_name=None, load_model_name=None, instrument=None, temperature=2):
   seq_length = 25
   vocab_size = 128
   batch_size = 64
-  load_model_path = "models/piano_model1"
-  save_model_path = "models/mozart_model1"
-  out_file = 'results/mozart1.mid'
+
+  if instrument == 'piano':
+    midi_instrument="Acoustic Grand Piano"
+  elif instrument == 'drums':
+    midi_instrument='Music box'
+  elif instrument=='bass':
+    midi_instrument='Aucoustic Bass'
+
+  
+  
+  
+  
   key_order = ['pitch', 'step', 'duration']
 
   num_predictions = 120
-  temperature = 2
 
-  raw_notes, all_notes, seq_ds = prepare_data("piano/train", seq_length, vocab_size)
+  raw_notes, all_notes, seq_ds = prepare_data(train_set, seq_length, vocab_size)
 
-  raw_notes_val, all_notes_val, seq_ds_val = prepare_data("piano/val", seq_length, vocab_size)
+
 
   n_notes = len(all_notes)
   buffer_size = n_notes - seq_length  # the number of items in the dataset
 
-  n_notes_val = len(all_notes)
-  buffer_size_val = n_notes_val - seq_length
+
 
   if train_model:
+    save_model_path = "models/"+instrument+'/'+save_model_name
+
+    #If training, we need to make validation set
+    _, _, seq_ds_val = prepare_data(val_set, seq_length, vocab_size)
+    n_notes_val = len(all_notes)
+    buffer_size_val = n_notes_val - seq_length
+
+    out_file = 'results/'+instrument+'/'+save_model_name+'_temp'+str(temperature)+'.mid'
     model = create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, seq_ds_val, buffer_size_val, batch_size)
-    generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file)
+    generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, midi_instrument)
 
   else:
+    load_model_path = "models/"+instrument+'/'+load_model_name
+
+    out_file = 'results/'+instrument+'/'+load_model_name+'_temp'+str(temperature)+'.mid'
+
+    #to not overwrite a result file
+    check_out_file = out_file
+    n=1
+    while os.path.isfile(check_out_file):
+      check_out_file = out_file
+      check_out_file+=str(n)
+    out_file=check_out_file
+
     model,_,_ = create_model(seq_length)
     model.load_weights(load_model_path)
-    generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, temperature, num_predictions)
+    generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, midi_instrument, temperature, num_predictions)
 
   plot_piano_roll(generated_notes)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Description of your program')
   parser.add_argument('-t','--train',default=False)
+  
+  parser.add_argument('--train_set', required=True)
+  parser.add_argument('--val_set')
+
+  parser.add_argument('-smn','--save_model_name')
+  parser.add_argument('-lmn','--load_model_name')
+  
+  parser.add_argument('--instrument', required=True)
+  parser.add_argument('--temp')
   args = vars(parser.parse_args())
 
-  main(args['train'])
+
+  if args["train"] and (args["train_set"] is None or args["val_set"] is None or args["save_model_name"] is None):
+    parser.error("--train requires --train_set, --val_set and --save_model_name.")
+  if not args["train"] and (args["load_model_name"] is None):
+    parser.error("--load_model_name is required")
+
+  main(train_model = args['train'], train_set=args['train_set'], val_set=args['val_set'],
+       save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
+       instrument=args['instrument'], temperature=int(args['temp']))
