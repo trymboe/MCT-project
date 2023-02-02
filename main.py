@@ -63,9 +63,11 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, val
   model.save_weights(save_model_path)
 
   plt.plot(history.epoch, history.history['loss'], label='total training loss')
+  plt.savefig('results/piano/training_loss.png')
   plt.figure()
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  plt.show()
+  plt.savefig('results/piano/validation_loss.png')
+  #plt.show()
   return model
 
 def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, instrument, temperature=2, num_predictions=120):
