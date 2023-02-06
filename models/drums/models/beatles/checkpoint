@@ -1,0 +1,2 @@
+model_checkpoint_path: "drums"
+all_model_checkpoint_paths: "drums"
