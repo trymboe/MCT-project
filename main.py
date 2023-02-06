@@ -6,6 +6,7 @@ import sys
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
+
 import argparse
 
 from help_funcs import midi_to_notes, plot_piano_roll, notes_to_midi, create_sequences, create_model, train_model, predict_next_note
@@ -36,23 +37,23 @@ def prepare_data(training_data_path,seq_length=25, vocab_size=128):
 
   return raw_notes, all_notes, seq_ds
 
-def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, val_seq,buffer_size_val, batch_size=64 ):
+def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, batch_size=64):
   '''
   This function creates and trains a model with all midi files found in the given path.
   The model is saved in the training_checkpoint folder.
   '''
+
   
-  train_ds = (seq_ds
-              .shuffle(buffer_size)
-              .batch(batch_size, drop_remainder=True)
-              .cache()
-              .prefetch(tf.data.experimental.AUTOTUNE))
+  dataset = (seq_ds.shuffle(buffer_size))
+
+
+  val_size = int(len(list(seq_ds))*0.15)
   
-  val_ds = (val_seq
-              .shuffle(buffer_size_val)
-              .batch(batch_size, drop_remainder=True)
-              .cache()
-              .prefetch(tf.data.experimental.AUTOTUNE))
+  train_ds = dataset.skip(val_size)
+  val_ds = dataset.take(val_size)
+
+  val_ds = val_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+  train_ds = train_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
 
   model, loss, optimizer = create_model(seq_length)
 
@@ -63,10 +64,10 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, val
   model.save_weights(save_model_path)
 
   plt.plot(history.epoch, history.history['loss'], label='total training loss')
-  plt.savefig('results/piano/training_loss.png')
+  plt.savefig(save_model_path+'training_loss.png')
   plt.figure()
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  plt.savefig('results/piano/validation_loss.png')
+  plt.savefig(save_model_path+'validation_loss.png')
   #plt.show()
   return model
 
@@ -102,7 +103,7 @@ def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, in
 
 
 
-def main(train_model=False, train_set=None, val_set=None, save_model_name=None, load_model_name=None, instrument=None, temperature=2):
+def main(train_model=False, dataset=None, save_model_name=None, load_model_name=None, instrument=None, temperature=2):
   seq_length = 25
   vocab_size = 128
   batch_size = 64
@@ -112,7 +113,7 @@ def main(train_model=False, train_set=None, val_set=None, save_model_name=None, 
   elif instrument == 'drums':
     midi_instrument='Music box'
   elif instrument=='bass':
-    midi_instrument='Aucoustic Bass'
+    midi_instrument='Acoustic Bass'
 
   
   
@@ -122,7 +123,7 @@ def main(train_model=False, train_set=None, val_set=None, save_model_name=None, 
 
   num_predictions = 120
 
-  raw_notes, all_notes, seq_ds = prepare_data(train_set, seq_length, vocab_size)
+  raw_notes, all_notes, seq_ds = prepare_data(dataset, seq_length, vocab_size)
 
 
 
@@ -132,21 +133,22 @@ def main(train_model=False, train_set=None, val_set=None, save_model_name=None, 
 
 
   if train_model:
-    save_model_path = "models/"+instrument+'/'+save_model_name
+    save_model_path = "models/"+save_model_name
 
     #If training, we need to make validation set
-    _, _, seq_ds_val = prepare_data(val_set, seq_length, vocab_size)
-    n_notes_val = len(all_notes)
-    buffer_size_val = n_notes_val - seq_length
+    # _, _, seq_ds_val = prepare_data(val_set, seq_length, vocab_size)
+    # n_notes_val = len(all_notes)
 
-    out_file = 'results/'+instrument+'/'+save_model_name+'_temp'+str(temperature)+'.mid'
-    model = create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, seq_ds_val, buffer_size_val, batch_size)
+    # buffer_size_val = n_notes_val - seq_length
+
+    out_file = 'result/'+save_model_name+'_temp'+str(temperature)+'.mid'
+    model = create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, batch_size)
     generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, midi_instrument)
 
   else:
-    load_model_path = "models/"+instrument+'/'+load_model_name
+    load_model_path = "models/"+load_model_name
 
-    out_file = 'results/'+instrument+'/'+load_model_name+'_temp'+str(temperature)+'.mid'
+    out_file = 'results/'+load_model_name+'_temp'+str(temperature)+'.mid'
 
     #to not overwrite a result file
     check_out_file = out_file
@@ -166,8 +168,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Description of your program')
   parser.add_argument('-t','--train',default=False)
   
-  parser.add_argument('--train_set', required=True)
-  parser.add_argument('--val_set')
+  parser.add_argument('-ds','--dataset', required=True)
 
   parser.add_argument('-smn','--save_model_name')
   parser.add_argument('-lmn','--load_model_name')
@@ -176,12 +177,15 @@ if __name__ == "__main__":
   parser.add_argument('--temp')
   args = vars(parser.parse_args())
 
+  temp = None
 
-  if args["train"] and (args["train_set"] is None or args["val_set"] is None or args["save_model_name"] is None):
-    parser.error("--train requires --train_set, --val_set and --save_model_name.")
+  if args["train"] and (args["dataset"] is None or args["save_model_name"] is None):
+    parser.error("--train requires --dataset, --val_set and --save_model_name.")
   if not args["train"] and (args["load_model_name"] is None):
     parser.error("--load_model_name is required")
+  if args["temp"]:
+    temp = int(args["temp"])
 
-  main(train_model = args['train'], train_set=args['train_set'], val_set=args['val_set'],
+  main(train_model = args['train'], dataset=args['dataset'],
        save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
-       instrument=args['instrument'], temperature=int(args['temp']))
+       instrument=args['instrument'], temperature=temp)
