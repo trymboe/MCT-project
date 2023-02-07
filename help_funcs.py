@@ -148,7 +148,7 @@ def train_model(model, train_ds, val_ds):
         filepath='./training_checkpoints/ckpt_{epoch}',
         save_weights_only=True),
     tf.keras.callbacks.EarlyStopping(
-        monitor='loss',
+        monitor='val_loss',
         patience=5,
         verbose=1,
         restore_best_weights=True),
