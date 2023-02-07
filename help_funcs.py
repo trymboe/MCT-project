@@ -24,7 +24,7 @@ def midi_to_notes(pm) -> pd.DataFrame:
     notes['step'].append(start - prev_start)
     notes['duration'].append(end - start)
     prev_start = start
-
+ 
   return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
 
@@ -149,6 +149,7 @@ def train_model(model, train_ds, val_ds):
         save_weights_only=True),
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
+        min_delta=0,
         patience=5,
         verbose=1,
         restore_best_weights=True),

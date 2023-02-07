@@ -2,7 +2,6 @@ import os
 import pretty_midi
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
@@ -68,7 +67,7 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, bat
   plt.figure()
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
   plt.savefig(save_model_path+'validation_loss.png')
-  #plt.show()
+  
   return model
 
 def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, instrument, temperature=2, num_predictions=120):
@@ -141,7 +140,7 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
 
     # buffer_size_val = n_notes_val - seq_length
 
-    out_file = 'result/'+save_model_name+'_temp'+str(temperature)+'.mid'
+    out_file = 'results/'+save_model_name+'_temp'+str(temperature)+'.mid'
     model = create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, batch_size)
     generated_notes = eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, midi_instrument)
 
@@ -189,3 +188,5 @@ if __name__ == "__main__":
   main(train_model = args['train'], dataset=args['dataset'],
        save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
        instrument=args['instrument'], temperature=temp)
+  
+  plt.show()
