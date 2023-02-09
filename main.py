@@ -62,11 +62,11 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, bat
 
   model.save_weights(save_model_path)
 
-  # plt.plot(history.epoch, history.history['loss'], label='total training loss')
-  # plt.savefig(save_model_path+'training_loss.png')
-  # plt.figure()
-  # plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  # plt.savefig(save_model_path+'validation_loss.png')
+  plt.plot(history.epoch, history.history['loss'], label='total training loss')
+  plt.savefig(save_model_path+'training_loss.png')
+  plt.figure()
+  plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
+  plt.savefig(save_model_path+'validation_loss.png')
   
   return model
 
