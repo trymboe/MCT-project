@@ -114,6 +114,8 @@ def create_model(seq_length):
     'step': tf.keras.layers.Dense(1, name='step')(x),
     'duration': tf.keras.layers.Dense(1, name='duration')(x),
   }
+  #pholophonic
+  #variational encoders
 
   model = tf.keras.Model(inputs, outputs)
 
@@ -150,7 +152,7 @@ def train_model(model, train_ds, val_ds):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=5,
+        patience=15,
         verbose=1,
         restore_best_weights=True),
   ]

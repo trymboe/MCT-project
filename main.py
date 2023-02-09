@@ -62,11 +62,11 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, bat
 
   model.save_weights(save_model_path)
 
-  plt.plot(history.epoch, history.history['loss'], label='total training loss')
-  plt.savefig(save_model_path+'training_loss.png')
-  plt.figure()
-  plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  plt.savefig(save_model_path+'validation_loss.png')
+  # plt.plot(history.epoch, history.history['loss'], label='total training loss')
+  # plt.savefig(save_model_path+'training_loss.png')
+  # plt.figure()
+  # plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
+  # plt.savefig(save_model_path+'validation_loss.png')
   
   return model
 
@@ -105,7 +105,7 @@ def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, in
 def main(train_model=False, dataset=None, save_model_name=None, load_model_name=None, instrument=None, temperature=2):
   seq_length = 25
   vocab_size = 128
-  batch_size = 64
+  batch_size = 128
 
   if instrument == 'piano':
     midi_instrument="Acoustic Grand Piano"
@@ -113,6 +113,8 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
     midi_instrument='Music box'
   elif instrument=='bass':
     midi_instrument='Acoustic Bass'
+  elif instrument=='melody':
+    midi_instrument='Lead 6 (voice)'
 
   
   
