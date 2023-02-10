@@ -104,7 +104,7 @@ def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
 
 def create_model(seq_length):
   input_shape = (seq_length, 3)
-  learning_rate = 0.001
+  learning_rate = 0.005
 
   inputs = tf.keras.Input(input_shape)
   x = tf.keras.layers.LSTM(512)(inputs)
@@ -158,7 +158,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 25
+  epochs = 15
 
 
   history = model.fit(
