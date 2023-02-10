@@ -152,12 +152,12 @@ def train_model(model, train_ds, val_ds):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=15,
+        patience=25,
         verbose=1,
         restore_best_weights=True),
   ]
 
-  epochs = 80
+  epochs = 250
 
   history = model.fit(
       train_ds,
