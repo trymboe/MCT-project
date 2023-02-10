@@ -107,7 +107,7 @@ def create_model(seq_length):
   learning_rate = 0.001
 
   inputs = tf.keras.Input(input_shape)
-  x = tf.keras.layers.LSTM(128)(inputs)
+  x = tf.keras.layers.LSTM(512)(inputs)
 
   outputs = {
     'pitch': tf.keras.layers.Dense(128, name='pitch')(x),
@@ -158,7 +158,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 1
+  epochs = 25
 
 
   history = model.fit(

@@ -114,7 +114,7 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
   elif instrument=='bass':
     midi_instrument='Acoustic Bass'
   elif instrument=='melody':
-    midi_instrument='Lead 6 (voice)'
+    midi_instrument='Acoustic Grand Piano'
 
   
   
@@ -181,11 +181,11 @@ if __name__ == "__main__":
   temp = None
 
   if args["train"] and (args["dataset"] is None or args["save_model_name"] is None):
-    parser.error("--train requires --dataset, --val_set and --save_model_name.")
+    parser.error("--train requires --dataset and --save_model_name.")
   if not args["train"] and (args["load_model_name"] is None):
     parser.error("--load_model_name is required")
   if args["temp"]:
-    temp = int(args["temp"])
+    temp = float(args["temp"])
 
   main(train_model = args['train'], dataset=args['dataset'],
        save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
