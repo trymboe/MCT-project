@@ -158,7 +158,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 15
+  epochs = 75
 
 
   history = model.fit(
