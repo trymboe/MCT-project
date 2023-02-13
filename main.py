@@ -9,10 +9,10 @@ from tensorflow import keras
 import argparse
 
 from help_funcs import midi_to_notes, plot_piano_roll, notes_to_midi, create_sequences, create_model, train_model, predict_next_note
-
+from transformer import prepare_data_transformers
 
 seed = 42
-tf.random.set_seed(seed)
+# tf.random.set_seed(seed)
 np.random.seed(seed)
 
 # Sampling rate for audio playback
@@ -111,23 +111,22 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
     midi_instrument="Acoustic Grand Piano"
   elif instrument == 'drums':
     midi_instrument='Music box'
-  elif instrument=='bass':
+  elif instrument=='bass':  
     midi_instrument='Acoustic Bass'
   elif instrument=='melody':
     midi_instrument='Acoustic Grand Piano'
 
-  
-  
-  
   
   key_order = ['pitch', 'step', 'duration']
 
   num_predictions = 120
 
   raw_notes, all_notes, seq_ds = prepare_data(dataset, seq_length, vocab_size)
-
-
-
+  print((list(seq_ds)[0][0]))
+  print((list(seq_ds)[1][0]))
+  return
+  # print(all_notes)
+  # return
   n_notes = len(all_notes)
   buffer_size = n_notes - seq_length  # the number of items in the dataset
 
@@ -165,30 +164,63 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
 
   plot_piano_roll(generated_notes)
 
+
+def main_transformer(train_model=False, dataset="data/melody/test", save_model_name=None, load_model_name=None, instrument=None, temperature=2):
+  seq_length = 25
+  vocab_size = 128
+  batch_size = 128
+  
+  if instrument == 'piano':
+    midi_instrument="Acoustic Grand Piano"
+  elif instrument == 'drums':
+    midi_instrument='Music box'
+  elif instrument=='bass':  
+    midi_instrument='Acoustic Bass'
+  elif instrument=='melody':
+    midi_instrument='Acoustic Grand Piano'
+
+  key_order = ['pitch', 'step', 'duration']
+  print(prepare_data_transformers(dataset, seq_length, vocab_size))
+  inputs, outputs, labels = prepare_data_transformers(dataset, seq_length, vocab_size)
+
+
+  print(inputs)
+  print(outputs)
+  print(labels)
+
+
+
+
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Description of your program')
-  parser.add_argument('-t','--train',default=False)
+  # parser = argparse.ArgumentParser(description='Description of your program')
+  # parser.add_argument('-t','--train',default=False)
   
-  parser.add_argument('-ds','--dataset', required=True)
+  # parser.add_argument('-ds','--dataset', required=True)
 
-  parser.add_argument('-smn','--save_model_name')
-  parser.add_argument('-lmn','--load_model_name')
+  # parser.add_argument('-smn','--save_model_name')
+  # parser.add_argument('-lmn','--load_model_name')
   
-  parser.add_argument('--instrument', required=True)
-  parser.add_argument('--temp')
-  args = vars(parser.parse_args())
+  # parser.add_argument('--instrument', required=True)
+  # parser.add_argument('--temp')
 
-  temp = None
+  # parser.add_argument('--test')
+  # args = vars(parser.parse_args())
 
-  if args["train"] and (args["dataset"] is None or args["save_model_name"] is None):
-    parser.error("--train requires --dataset and --save_model_name.")
-  if not args["train"] and (args["load_model_name"] is None):
-    parser.error("--load_model_name is required")
-  if args["temp"]:
-    temp = float(args["temp"])
+  # temp = None
 
-  main(train_model = args['train'], dataset=args['dataset'],
-       save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
-       instrument=args['instrument'], temperature=temp)
-  
-  plt.show()
+
+  main_transformer()
+
+  if False:
+    if args["train"] and (args["dataset"] is None or args["save_model_name"] is None):
+      parser.error("--train requires --dataset and --save_model_name.")
+    if not args["train"] and (args["load_model_name"] is None):
+      parser.error("--load_model_name is required")
+    if args["temp"]:
+      temp = float(args["temp"])
+
+    main(train_model = args['train'], dataset=args['dataset'],
+        save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
+        instrument=args['instrument'], temperature=temp)
+    
+    plt.show()
