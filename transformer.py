@@ -13,15 +13,16 @@ def create_sequences_transformers(dataset: tf.data.Dataset, seq_length: int, voc
   """Returns TF Dataset of sequence and label examples."""
   key_order = ['pitch', 'step', 'duration']
   # Want even numbers
-  seq_length = seq_length*2
+  
 
 
   # Take 1 extra for the labels
-  windows = dataset.window(seq_length, shift=1, stride=1,
+  windows = dataset.window(seq_length*2, shift=1, stride=1,
                               drop_remainder=True)
 
+
   # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
-  flatten = lambda x: x.batch(seq_length, drop_remainder=True)
+  flatten = lambda x: x.batch(seq_length*2, drop_remainder=True)
   sequences = windows.flat_map(flatten)
 
 
@@ -33,14 +34,13 @@ def create_sequences_transformers(dataset: tf.data.Dataset, seq_length: int, voc
 
   # Split the labels
   def split_labels(sequences):
-    inputs = sequences[:seq_length/2]
-    labels_dense = sequences[seq_length/2:]
-    ouputs = sequences[:-1]
-    labels = labels_dense[1:]
-    return scale_pitch(inputs), scale_pitch(ouputs), scale_pitch(labels)
+    inputs = sequences[:seq_length]
+    outputs = sequences[seq_length:(2*seq_length-1)]
+    labels = sequences[seq_length+1:]
 
+    return tf.transpose(inputs), tf.transpose(outputs), tf.transpose(labels)
 
-  return split_labels(sequences)
+  return sequences.map(split_labels)
 
 def prepare_data_transformers(training_data_path,seq_length=25, vocab_size=128):
   all_notes = []
@@ -56,8 +56,8 @@ def prepare_data_transformers(training_data_path,seq_length=25, vocab_size=128):
   train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
   notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
     
-  inputs, outputs, labels = create_sequences_transformers(notes_ds, seq_length, vocab_size)
-  return inputs, outputs, labels 
+  seq = create_sequences_transformers(notes_ds, seq_length, vocab_size)
+  return seq
 
 def positional_encoding(length, depth):
   depth = depth/2
@@ -91,4 +91,31 @@ class PositionalEmbedding(tf.keras.layers.Layer):
     # This factor sets the relative scale of the embedding and positonal_encoding.
     x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
     x = x + self.pos_encoding[tf.newaxis, :length, :]
+    return x
+
+
+class BaseAttention(tf.keras.layers.Layer):
+  def __init__(self, **kwargs):
+    super().__init__()
+    self.mha = tf.keras.layers.MultiHeadAttention(**kwargs)
+    self.layernorm = tf.keras.layers.LayerNormalization()
+    self.add = tf.keras.layers.Add()
+
+
+class CrossAttention(BaseAttention):
+  #Called by passing the target sequence x as query
+  #And context sequence as key/value
+  def call(self, x, context):
+    attn_output, attn_scores = self.mha(
+        query=x,
+        key=context,
+        value=context,
+        return_attention_scores=True)
+
+    # Cache the attention scores for plotting later.
+    self.last_attn_scores = attn_scores
+
+    x = self.add([x, attn_output])
+    x = self.layernorm(x)
+
     return x

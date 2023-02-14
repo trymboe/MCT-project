@@ -76,6 +76,7 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
   # Take 1 extra for the labels
   windows = dataset.window(seq_length, shift=1, stride=1,
                               drop_remainder=True)
+  
 
   # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
   flatten = lambda x: x.batch(seq_length, drop_remainder=True)
@@ -108,7 +109,7 @@ def create_model(seq_length):
   learning_rate = 0.005
 
   inputs = tf.keras.Input(input_shape)
-  x = tf.keras.layers.LSTM(512)(inputs)
+  x = tf.keras.layers.LSTM(128)(inputs)
 
   outputs = {
     'pitch': tf.keras.layers.Dense(128, name='pitch')(x),
@@ -159,7 +160,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 75
+  epochs = 2
 
 
   history = model.fit(
@@ -194,37 +195,3 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
   duration = tf.maximum(0, duration)
 
   return int(pitch), float(step), float(duration)
-
-
-def create_sequences_transformers(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128,) -> tf.data.Dataset:
-  """Returns TF Dataset of sequence and label examples."""
-  key_order = ['pitch', 'step', 'duration']
-  # Want even numbers
-  seq_length = seq_length*2
-
-
-  # Take 1 extra for the labels
-  windows = dataset.window(seq_length, shift=1, stride=1,
-                              drop_remainder=True)
-
-  # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
-  flatten = lambda x: x.batch(seq_length, drop_remainder=True)
-  sequences = windows.flat_map(flatten)
-
-
-  # Normalize note pitch
-  def scale_pitch(x):
-    x = x/[vocab_size,1.0,1.0]
-    return x
-
-
-  # Split the labels
-  def split_labels(sequences):
-    inputs = sequences[:seq_length]
-    labels_dense = sequences[seq_length:]
-    ouputs = sequences[:-1]
-    labels = labels_dense[1:]
-    return scale_pitch(inputs), scale_pitch(ouputs), scale_pitch(labels)
-
-
-  return split_labels(sequences)
