@@ -111,35 +111,56 @@ def create_model(seq_length):
   inputs = tf.keras.Input(input_shape)
   print(inputs.shape)
 
-  #Common part
-  x = tf.keras.layers.LSTM(256,return_sequences=True, input_shape=input_shape)(inputs)
-  x = tf.keras.layers.Dropout(0.2)(x)
-  x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+
+  # #separate part for pitch
+  # inputPitch = tf.keras.layers.Input(shape=(input_shape))
+  # inputPitch = tf.keras.layers.LSTM(256, input_shape=(input_shape), return_sequences=True)(inputPitch)
+  # inputPitch = tf.keras.layers.Dropout(0.2)(inputPitch)
+
+  # #separate part for step
+  # inputStep = tf.keras.layers.Input(shape=(input_shape))
+  # inputStep = tf.keras.layers.LSTM(256, input_shape=(input_shape), return_sequences=True)(inputStep)
+  # inputStep = tf.keras.layers.Dropout(0.2)(inputStep)
+	
+  # #separate part for duration
+  # inputDurations = tf.keras.layers.Input(shape=(input_shape))
+  # inputDurations = tf.keras.layers.LSTM(256, input_shape=(input_shape), return_sequences=True)(inputDurations)
+  # inputDurations = tf.keras.layers.Dropout(0.2)(inputDurations)
+	
+
+  # inputs = tf.keras.layers.concatenate([inputPitch, inputStep, inputDurations])
+
+
+
+  # #Common part
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
   x = tf.keras.layers.Dropout(0.3)(x)
-  x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512)(x)
   x = tf.keras.layers.BatchNormalization()(x)
   x = tf.keras.layers.Dropout(0.3)(x)
   x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-  #Seperate part for pitch
+  #separate part for pitch
   out_pitch = tf.keras.layers.Dense(128, activation='relu')(x)
   out_pitch = tf.keras.layers.BatchNormalization()(out_pitch)
   out_pitch = tf.keras.layers.Dropout(0.3)(out_pitch)
 
-  #Seperate part for step
+  #separate part for step
   out_step = tf.keras.layers.Dense(128, activation='relu')(x)
   out_step = tf.keras.layers.BatchNormalization()(out_step)
   out_step = tf.keras.layers.Dropout(0.3)(out_step)
 
-  #Seperate part for duration
+  #separate part for duration
   out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
   out_dur = tf.keras.layers.BatchNormalization()(out_dur)
   out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
 
   outputs = {
-    'pitch': tf.keras.layers.Dense(128, name='pitch')(out_pitch),
-    'step': tf.keras.layers.Dense(1, name='step')(out_step),
-    'duration': tf.keras.layers.Dense(1, name='duration')(out_dur),
+    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(out_pitch),
+    'step': tf.keras.layers.Dense(1, activation="softmax", name='step')(out_step),
+    'duration': tf.keras.layers.Dense(1, activation="softmax",  name='duration')(out_dur),
   }
   #pholophonic
   #variational encoders
@@ -147,8 +168,7 @@ def create_model(seq_length):
   model = tf.keras.Model(inputs, outputs)
 
   loss = {
-        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True),
+        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(),
         'step': mse_with_positive_pressure,
         'duration': mse_with_positive_pressure,
   }
@@ -185,8 +205,18 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 150
+  epochs = 3
 
+  # pitch_dataset = train_ds[:,:,0]
+  # step_dataset = train_ds[:,:,1]
+  # duration_dataset = train_ds[:,:,2]
+
+  # history = model.fit(
+  #     [pitch_dataset, step_dataset, duration_dataset],
+  #     epochs=epochs,
+  #     callbacks=callbacks,
+  #     validation_data=val_ds,
+  # )
 
   history = model.fit(
       train_ds,

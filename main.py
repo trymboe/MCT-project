@@ -56,7 +56,7 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, bat
 
   model, loss, optimizer = create_model(seq_length)
 
-  losses = model.evaluate(train_ds, return_dict=True)
+  #losses = model.evaluate(train_ds, return_dict=True)
 
   history = train_model(model, train_ds, val_ds)
 

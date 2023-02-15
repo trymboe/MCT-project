@@ -1,2 +1,2 @@
-model_checkpoint_path: "new_LSTM_150epochs"
-all_model_checkpoint_paths: "new_LSTM_150epochs"
+model_checkpoint_path: "test"
+all_model_checkpoint_paths: "test"
