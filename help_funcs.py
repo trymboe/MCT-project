@@ -112,9 +112,11 @@ def create_model(seq_length):
   print(inputs.shape)
 
   #Common part
-  x = tf.keras.layers.LSTM(128,return_sequences=True, input_shape=input_shape)(inputs)
+  x = tf.keras.layers.LSTM(256,return_sequences=True, input_shape=input_shape)(inputs)
   x = tf.keras.layers.Dropout(0.2)(x)
-  x = tf.keras.layers.LSTM(128)(x)
+  x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
   x = tf.keras.layers.BatchNormalization()(x)
   x = tf.keras.layers.Dropout(0.3)(x)
   x = tf.keras.layers.Dense(256, activation='relu')(x)
@@ -183,7 +185,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 5
+  epochs = 150
 
 
   history = model.fit(
