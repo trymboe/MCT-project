@@ -205,7 +205,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 3
+  epochs = 150
 
   # pitch_dataset = train_ds[:,:,0]
   # step_dataset = train_ds[:,:,1]
