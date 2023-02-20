@@ -21,8 +21,9 @@ def isolate_track(midi_obj, instrument_name):
     return None
 
 
-path=("data/POP909-Dataset/POP909")
-track = 'MELODY'
+path=("data/POP909")
+track1 = 'MELODY'
+track2 = 'PIANO'
 for folder in os.listdir(path):
     if '.DS_Store' not in folder:
         if 'index' not in folder:
@@ -30,15 +31,28 @@ for folder in os.listdir(path):
             for i in os.listdir(path+'/'+folder):
                 full_path = path+'/'+folder+'/'+i
                 # print(full_path)
+
                 if ".mid" in i:
                     print(f'-- Working on song {i} --')
                     pm = pretty_midi.PrettyMIDI(full_path)
-                    pm_tracks = isolate_track(pm, track)
-                    if pm_tracks:
+                    pm_tracks1 = isolate_track(pm, track1)
+                    pm_tracks2 = isolate_track(pm, track2)
+                    os.makedirs(f'data/duet/{folder}')
+                    pm_tracks1[0].write(f"data/duet/{folder}/melody.mid")
+                    pm_tracks2[0].write(f"data/duet/{folder}/piano.mid")
 
-                        for ind, pm in enumerate(pm_tracks):
+
+
+                # if ".mid" in i:
+                #     print(f'-- Working on song {i} --')
+                #     pm = pretty_midi.PrettyMIDI(full_path)
+                #     pm_tracks1 = isolate_track(pm, track1)
+                #     pm_tracks2 = isolate_track(pm, track1)
+                #     if pm_tracks:
+
+                #         for ind, pm in enumerate(pm_tracks):
                             
-                            pm.write(f"data/melody/{i}")
+                #             pm.write(f"data/melody/{i}")
 
 
 #Melody, Vocal, Clarinet, Lead - Flute, voc
