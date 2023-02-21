@@ -4,62 +4,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 import collections
 import pandas as pd
+import random
 import tensorflow as tf
 from tensorflow import keras
 
 def prepare_data(training_data_path,seq_length=25, vocab_size=128):
-  all_notes = []
-  for folder in os.listdir(training_data_path):
-    for i in os.listdir(training_data_path+'/'+folder):
-      print(folder, i)
-      full_path = training_data_path+'/'+folder+'/'+i
-      if "melody" in i:
-        melody_ds = extract_notes(full_path)
-      if "piano" in i:
-        piano_ds = extract_notes(full_path)
+  dataset = []
 
-    # seq_ds = create_sequences(melody_ds, piano_ds, seq_length, vocab_size)
+  for idx, folder in enumerate(os.listdir(training_data_path)):
+    if "DS" not in folder:
+      for i in os.listdir(training_data_path+'/'+folder):
+        if "DS" not in folder:
+          full_path = training_data_path+'/'+folder+'/'+i
+          if "melody" in i:
+            melody_ds = extract_notes(full_path)
+          if "piano" in i:
+            piano_ds = extract_notes(full_path)
+      dataset.append([piano_ds,melody_ds])
 
-  # return raw_notes, all_notes, seq_ds
+  dataset = batch_dataset(dataset,32)
+
+  return dataset
+
+def batch_dataset(dataset, batch_size):
+   notes_to_midi(dataset[0][1], "test.mid", "Acoustic Grand Piano")
+
+   for inst in dataset:
+      i = 0
+      while(True):
+        if len(inst) > i*batch_size:
+          piano = inst[1][batch_size*i:batch_size*(i+1)]
+          print(piano)
+
+
+        else:
+           break
+        i+=1
 
 def extract_notes(path):
   pm_melody = pretty_midi.PrettyMIDI(path)
   all_notes = midi_to_notes(pm_melody)
-  notes_to_midi(all_notes, path, "Acoustic Grand Piano")
-  key_order = ['pitch', 'step', 'duration']
+  key_order = ['pitch', 'start', 'duration']
   train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
-  notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
-  return notes_ds
-
-def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128,) -> tf.data.Dataset:
-  """Returns TF Dataset of sequence and label examples."""
-  key_order = ['pitch', 'step', 'duration']
-  seq_length = seq_length+1
-
-  # Take 1 extra for the labels
-  windows = dataset.window(seq_length, shift=1, stride=1,
-                              drop_remainder=True)
-  
-
-  # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
-  flatten = lambda x: x.batch(seq_length, drop_remainder=True)
-  sequences = windows.flat_map(flatten)
-
-
-  # Normalize note pitch
-  def scale_pitch(x):
-    x = x/[vocab_size,1.0,1.0]
-    return x
-
-  # Split the labels
-  def split_labels(sequences):
-    inputs = sequences[:-1]
-    labels_dense = sequences[-1]
-    labels = {key:labels_dense[i] for i,key in enumerate(key_order)}
-
-    return scale_pitch(inputs), labels
-
-  return sequences.map(split_labels, num_parallel_calls=tf.data.AUTOTUNE)
+  #notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
+  return all_notes
 
 def midi_to_notes(pm) -> pd.DataFrame:
   instrument = pm.instruments[0]
@@ -89,7 +77,6 @@ def notes_to_midi(notes: pd.DataFrame, out_file: str, instrument_name: str, velo
 
     prev_start = 0
     first_note_start = notes['start'].iloc[0]
-    print(notes['pitch'].iloc[0])
     # If the first note does not start at time 0, insert a silent note
     if first_note_start > 0:
         
@@ -120,10 +107,44 @@ def notes_to_midi(notes: pd.DataFrame, out_file: str, instrument_name: str, velo
     pm.write(out_file)
     return pm
 
+# def create_and_train_model(dataset, seq_length, seq_ds, save_model_path, batch_size=64):
+#   '''
+#   This function creates and trains a model with all midi files found in the given path.
+#   The model is saved in the training_checkpoint folder.
+#   '''
+
+#   random.shuffle(dataset)
+
+#   val_size = int(len(list(seq_ds))*0.15)
+  
+#   train_ds = dataset[:val_size]
+#   val_ds = dataset[val_size:]
+
+#   val_ds = val_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+#   train_ds = train_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+
+#   model, loss, optimizer = create_model(seq_length)
+
+#   #losses = model.evaluate(train_ds, return_dict=True)
+
+#   history = train_model(model, train_ds, val_ds)
+
+#   model.save_weights(save_model_path)
+
+#   plt.plot(history.epoch, history.history['loss'], label='total training loss')
+#   plt.savefig(save_model_path+'training_loss.png')
+#   plt.figure()
+#   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
+#   plt.savefig(save_model_path+'validation_loss.png')
+  
+#   return model
 
 if __name__ == "__main__":
-    dataset = "data/duet/test"
+    dataset = "data/duet/small"
     seq_length = 25
     vocab_size = 128
 
-    raw_notes, all_notes, seq_ds = prepare_data(dataset, seq_length, vocab_size)
+    #raw_notes, all_notes, seq_ds = 
+    dataset = prepare_data(dataset, seq_length, vocab_size)
+
+    
