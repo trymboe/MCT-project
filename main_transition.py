@@ -271,8 +271,6 @@ def notes_to_midi(notes: pd.DataFrame, first_note, out_file: str, instrument_nam
   return pm
 
 def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
-  print(notes['transition'])
-  return
   if count:
     title = f'First {count} notes'
   else:
@@ -280,7 +278,7 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
     count = len(notes['transition'])
   plt.figure(figsize=(20, 4))
   pitch = np.zeros(count)
-  pitch[0] = last_note['pitch'] + notes['transition'][0]
+  pitch[0] = last_note + notes['transition'][0]
   for i in range(1, count):
       pitch[i] = pitch[i-1] + notes['transition'][i]
   plot_pitch = np.stack([pitch, pitch], axis=0)
