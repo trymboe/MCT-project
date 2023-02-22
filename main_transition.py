@@ -13,7 +13,7 @@ BATCH_SIZE = 32
 NUM_PREDICTIONS = 120
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
-EPOCHS = 1
+EPOCHS = 50
 KEY_ORDER = ['transition', 'duration']
 
 def prepare_data(training_data_path):
