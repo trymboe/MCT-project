@@ -168,9 +168,6 @@ def create_model():
 
 def train_model(model, train_ds, val_ds, save_model_path):
   callbacks = [
-    tf.keras.callbacks.ModelCheckpoint(
-        filepath='./training_checkpoints/ckpt_{epoch}',
-        save_weights_only=True),
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
