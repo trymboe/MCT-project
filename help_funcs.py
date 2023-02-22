@@ -96,7 +96,7 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
 
     return scale_pitch(inputs), labels
 
-  return sequences.map(split_labels, num_parallel_calls=tf.data.AUTOTUNE)
+  return sequences.map(split_labels, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 
 def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
@@ -199,13 +199,13 @@ def train_model(model, train_ds, val_ds):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=25,
+        patience=125,
         verbose=1,
         restore_best_weights=True),
   ]
 
 
-  epochs = 150
+  epochs = 220
 
   # pitch_dataset = train_ds[:,:,0]
   # step_dataset = train_ds[:,:,1]
