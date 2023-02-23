@@ -15,7 +15,7 @@ VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 KEY_ORDER = ['transition', 'duration']
-EPOCHS = 20
+EPOCHS = 50
 
 def prepare_data(training_data_path):
   all_notes = []
@@ -311,15 +311,15 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
 if __name__  == "__main__":
     
 
-  raw_notes, all_notes, seq_ds = prepare_data("data/melody")
+  raw_notes, all_notes, seq_ds = prepare_data("data/beatles/melody")
 
   
   buffer_size = len(all_notes) - SEQ_LENGTH
   val_ds, train_ds = split_data(buffer_size, seq_ds)
   
   model, loss, optimizer = create_model()
-  train_model(model, val_ds, train_ds, "melody/model1")
-  generated_notes, first_note = eval_model(model, raw_notes, "results/test.mid", "Acoustic Grand Piano")
+  train_model(model, val_ds, train_ds, "melody/beatles1")
+  generated_notes, first_note = eval_model(model, raw_notes, "results/beatles.mid", "Acoustic Grand Piano")
   plot_piano_roll(generated_notes, first_note)
 
   plt.show()
