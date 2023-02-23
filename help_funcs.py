@@ -202,7 +202,7 @@ def train_model(model, train_ds, val_ds):
   ]
 
 
-  epochs = 220
+  epochs = 1
 
   # pitch_dataset = train_ds[:,:,0]
   # step_dataset = train_ds[:,:,1]
@@ -233,6 +233,8 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
 
   predictions = model.predict(inputs)
   pitch_logits = predictions['pitch']
+  print(pitch_logits)
+  return
   step = predictions['step']
   duration = predictions['duration']
 

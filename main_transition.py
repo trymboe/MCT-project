@@ -13,8 +13,9 @@ BATCH_SIZE = 32
 NUM_PREDICTIONS = 120
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
-EPOCHS = 50
+NOISE_SCALE = 0.1
 KEY_ORDER = ['transition', 'duration']
+EPOCHS = 10
 
 def prepare_data(training_data_path):
   all_notes = []
@@ -124,19 +125,19 @@ def create_model():
   inputs = tf.keras.Input(input_shape)
 
   # #Common part
-  x = tf.keras.layers.LSTM(512)(inputs)
+  x = tf.keras.layers.LSTM(128)(inputs)
 
 
 
   #separate part for transition
   out_trans = tf.keras.layers.Dense(128, activation='relu')(x)
   out_trans = tf.keras.layers.BatchNormalization()(out_trans)
-  out_trans = tf.keras.layers.Dropout(0.3)(out_trans)
+  out_trans = tf.keras.layers.Dropout(0.8)(out_trans)
 
   #separate part for duration
   out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
   out_dur = tf.keras.layers.BatchNormalization()(out_dur)
-  out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
+  out_dur = tf.keras.layers.Dropout(0.8)(out_dur)
 
   outputs = {
     'transition': tf.keras.layers.Dense(1, activation="relu", name='transition')(x),
@@ -191,7 +192,7 @@ def train_model(model, train_ds, val_ds, save_model_path):
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
   # plt.savefig(save_model_path+'validation_loss.png') 
 
-def eval_model(model, raw_notes, out_file, instrument, temperature=2):
+def eval_model(model, raw_notes, out_file, instrument, temperature=100):
 
   sample_notes = np.stack([raw_notes[key] for key in KEY_ORDER], axis=1)
 
@@ -199,14 +200,15 @@ def eval_model(model, raw_notes, out_file, instrument, temperature=2):
   # sequences
   transition_max, duration_max = load_values('scaling.json')
 
-  input_notes = (
-      sample_notes[:SEQ_LENGTH] / np.array([transition_max, duration_max]))
+  input_notes = (sample_notes[:SEQ_LENGTH] / np.array([transition_max, duration_max]))
   
   first_note = 60
   generated_notes = []
   prev_end = 0
   for _ in range(NUM_PREDICTIONS):
     transition, duration = predict_next_note(input_notes, model, temperature)
+    transition *= transition_max
+    print(transition)
     start = prev_end
     end = start + duration
     input_note = (transition, duration)
@@ -224,6 +226,15 @@ def eval_model(model, raw_notes, out_file, instrument, temperature=2):
 
   return generated_notes, first_note
 
+def add_noise(prediction):
+    # Add Gaussian noise to the output of the 'transition' neuron
+    noise = NOISE_SCALE * np.random.randn()
+    print(noise)
+    prediction['transition'] *= noise
+
+    # Return the output
+    return prediction
+
 def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 1.0) -> int:
   """Generates a note IDs using a trained sequence model."""
 
@@ -231,16 +242,21 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
   inputs = tf.expand_dims(notes, 0)
 
   predictions = model.predict(inputs)
+  
+  print(predictions)
+  predictions = add_noise(predictions)
+  print(predictions)
+
   transition = predictions['transition']
   duration = predictions['duration']
 
-  duration = tf.squeeze(duration, axis=-1)
   transition = tf.squeeze(transition, axis=-1)
+  duration = tf.squeeze(duration, axis=-1)
 
   # `duration` values should be non-negative
   duration = tf.maximum(0, duration)
 
-  return int(transition), float(duration)
+  return float(transition), float(duration)
 
 def notes_to_midi(notes: pd.DataFrame, first_note, out_file: str, instrument_name: str, velocity: int = 100,) -> pretty_midi.PrettyMIDI:
   pm = pretty_midi.PrettyMIDI()
@@ -262,6 +278,8 @@ def notes_to_midi(notes: pd.DataFrame, first_note, out_file: str, instrument_nam
     instrument.notes.append(new_note)
     prev_end = end
     cur_note += note["transition"]
+    if cur_note > 127 or cur_note < 0:
+      cur_note = 60
 
   pm.instruments.append(instrument)
   pm.write(out_file)
@@ -296,7 +314,7 @@ if __name__  == "__main__":
   val_ds, train_ds = split_data(buffer_size, seq_ds)
   
   model, loss, optimizer = create_model()
-  train_model(model, val_ds, train_ds, "melody")
+  train_model(model, val_ds, train_ds, "melody/model1")
   generated_notes, first_note = eval_model(model, raw_notes, "results/test.mid", "Acoustic Grand Piano")
   plot_piano_roll(generated_notes, first_note)
 
