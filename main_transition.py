@@ -13,9 +13,9 @@ BATCH_SIZE = 32
 NUM_PREDICTIONS = 120
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
-NOISE_SCALE = 0.1
+NOISE_SCALE = 1
 KEY_ORDER = ['transition', 'duration']
-EPOCHS = 10
+EPOCHS = 20
 
 def prepare_data(training_data_path):
   all_notes = []
@@ -68,16 +68,17 @@ def create_sequences(dataset: tf.data.Dataset) -> tf.data.Dataset:
   # Normalize transition
   def scale_transition(x):
     transition_max, duration_max = load_values('scaling.json')
+
     x = x/[transition_max,duration_max]
     return x
 
   # Split the labels
   def split_labels(sequences):
+    scale_transition(sequences)
     inputs = sequences[:-1]
     labels_dense = sequences[-1]
     labels = {key:labels_dense[i] for i,key in enumerate(KEY_ORDER)}
-
-    return scale_transition(inputs), labels
+    return inputs, labels
 
   return sequences.map(split_labels, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
@@ -125,7 +126,7 @@ def create_model():
   inputs = tf.keras.Input(input_shape)
 
   # #Common part
-  x = tf.keras.layers.LSTM(128)(inputs)
+  x = tf.keras.layers.LSTM(512)(inputs)
 
 
 
@@ -207,8 +208,6 @@ def eval_model(model, raw_notes, out_file, instrument, temperature=100):
   prev_end = 0
   for _ in range(NUM_PREDICTIONS):
     transition, duration = predict_next_note(input_notes, model, temperature)
-    transition *= transition_max
-    print(transition)
     start = prev_end
     end = start + duration
     input_note = (transition, duration)
@@ -229,23 +228,28 @@ def eval_model(model, raw_notes, out_file, instrument, temperature=100):
 def add_noise(prediction):
     # Add Gaussian noise to the output of the 'transition' neuron
     noise = NOISE_SCALE * np.random.randn()
-    print(noise)
-    prediction['transition'] *= noise
+    print("noise ",noise)
+    prediction['transition'] += noise
 
     # Return the output
     return prediction
 
 def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 1.0) -> int:
   """Generates a note IDs using a trained sequence model."""
-
+  transition_max, duration_max = load_values('scaling.json')
   # Add batch dimension
   inputs = tf.expand_dims(notes, 0)
 
   predictions = model.predict(inputs)
+  print("First prediction ", predictions)
+
+  predictions["transition"] *= transition_max
+  predictions["duration"] *= duration_max
+  print("prediction after scaling ",predictions)
   
-  print(predictions)
-  predictions = add_noise(predictions)
-  print(predictions)
+  # predictions = add_noise(predictions)
+  print("prediction after noise ",predictions)
+  print("\n")
 
   transition = predictions['transition']
   duration = predictions['duration']
@@ -307,7 +311,7 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
 if __name__  == "__main__":
     
 
-  raw_notes, all_notes, seq_ds = prepare_data("data/melody/test")
+  raw_notes, all_notes, seq_ds = prepare_data("data/melody")
 
   
   buffer_size = len(all_notes) - SEQ_LENGTH
