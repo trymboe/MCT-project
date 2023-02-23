@@ -126,19 +126,25 @@ def create_model():
   inputs = tf.keras.Input(input_shape)
 
   # #Common part
-  x = tf.keras.layers.LSTM(512)(inputs)
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512)(x)
+  x = tf.keras.layers.BatchNormalization()(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
 
 
 
   #separate part for transition
   out_trans = tf.keras.layers.Dense(128, activation='relu')(x)
   out_trans = tf.keras.layers.BatchNormalization()(out_trans)
-  out_trans = tf.keras.layers.Dropout(0.8)(out_trans)
+  out_trans = tf.keras.layers.Dropout(0.3)(out_trans)
 
   #separate part for duration
   out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
   out_dur = tf.keras.layers.BatchNormalization()(out_dur)
-  out_dur = tf.keras.layers.Dropout(0.8)(out_dur)
+  out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
 
   outputs = {
     'transition': tf.keras.layers.Dense(1, activation="relu", name='transition')(x),
@@ -188,10 +194,10 @@ def train_model(model, train_ds, val_ds, save_model_path):
   model.save_weights(save_model_path)
 
   plt.plot(history.epoch, history.history['loss'], label='total training loss')
-  # plt.savefig(save_model_path+'training_loss.png')
+  plt.savefig(save_model_path+'training_loss.png')
   plt.figure()
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  # plt.savefig(save_model_path+'validation_loss.png') 
+  plt.savefig(save_model_path+'validation_loss.png') 
 
 def eval_model(model, raw_notes, out_file, instrument, temperature=100):
 
@@ -311,14 +317,14 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
 if __name__  == "__main__":
     
 
-  raw_notes, all_notes, seq_ds = prepare_data("data/beatles/melody")
+  raw_notes, all_notes, seq_ds = prepare_data("data/beatles/melody/test")
 
   
   buffer_size = len(all_notes) - SEQ_LENGTH
   val_ds, train_ds = split_data(buffer_size, seq_ds)
   
   model, loss, optimizer = create_model()
-  train_model(model, val_ds, train_ds, "melody/beatles1")
+  train_model(model, val_ds, train_ds, "models/melody/beatles2/")
   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles.mid", "Acoustic Grand Piano")
   plot_piano_roll(generated_notes, first_note)
 
