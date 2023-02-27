@@ -193,12 +193,15 @@ def create_model(seq_length):
 
 def train_model(model, train_ds, val_ds):
   callbacks = [
+    tf.keras.callbacks.ModelCheckpoint(
+      filepath='./training_checkpoints/ckpt_{epoch}',
+      save_weights_only=True),
     tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss',
-        min_delta=0,
-        patience=125,
-        verbose=1,
-        restore_best_weights=True),
+      monitor='val_loss',
+      min_delta=0,
+      patience=125,
+      verbose=1,
+      restore_best_weights=True),
   ]
 
 
@@ -233,8 +236,6 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
 
   predictions = model.predict(inputs)
   pitch_logits = predictions['pitch']
-  print(pitch_logits)
-  return
   step = predictions['step']
   duration = predictions['duration']
 
