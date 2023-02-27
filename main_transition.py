@@ -16,7 +16,7 @@ LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 KEY_ORDER = ['transition', 'duration', 'pitch']
 VOCAB_SIZE = 128
-EPOCHS = 25
+EPOCHS = 250
 TEMPERATURE = 1
 
 def prepare_data(training_data_path):
@@ -361,10 +361,10 @@ if __name__  == "__main__":
   if load_model:
     model.load_weights(load_model_path)
   else:
-    train_model(model, val_ds, train_ds, "models/melody/beatles4/")
+    train_model(model, val_ds, train_ds, "models/beatles/melody/model1/250_epochs")
   
   if not only_train:
-    generated_notes, first_note = eval_model(model, raw_notes, "results/beatles4", "Acoustic Grand Piano")
+    generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model1/250_epochs", "Acoustic Grand Piano")
     plot_piano_roll(generated_notes, first_note)
 
   plt.show()
