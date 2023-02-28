@@ -1,0 +1,58 @@
+def create_model():
+  input_shape = (SEQ_LENGTH, len(KEY_ORDER))
+  
+  inputs = tf.keras.Input(input_shape)
+
+  # #Common part
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512,return_sequences=True)(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.LSTM(512)(x)
+  x = tf.keras.layers.BatchNormalization()(x)
+  x = tf.keras.layers.Dropout(0.3)(x)
+
+
+  #separate part for transition
+  out_trans = tf.keras.layers.Dense(128, activation='relu')(x)
+  out_trans = tf.keras.layers.BatchNormalization()(out_trans)
+  out_trans = tf.keras.layers.Dropout(0.3)(out_trans)
+
+  #separate part for duration
+  out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
+  out_dur = tf.keras.layers.BatchNormalization()(out_dur)
+  out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
+
+  #separate part for pitch
+  out_pitch = tf.keras.layers.Dense(128, activation='relu')(x)
+  out_pitch = tf.keras.layers.BatchNormalization()(out_pitch)
+  out_pitch = tf.keras.layers.Dropout(0.3)(out_pitch)
+
+  outputs = {
+    'transition': tf.keras.layers.Dense(1, activation="relu", name='transition')(out_trans),
+    'duration': tf.keras.layers.Dense(1, activation="relu",  name='duration')(out_dur),
+    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(out_pitch),
+  }
+  #pholophonic
+  #variational encoders
+
+  model = tf.keras.Model(inputs, outputs)
+
+  loss = {
+        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(),
+        'transition': mse_with_positive_pressure,
+        'duration': mse_with_positive_pressure,
+  }
+
+  optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+
+  
+  model.compile(
+    loss=loss,
+    loss_weights={
+      'transition': 1.0,
+      'duration':1.0,
+      'pitch': 0.1,
+    },
+    optimizer=optimizer,
+  )

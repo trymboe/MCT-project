@@ -18,6 +18,7 @@ KEY_ORDER = ['transition', 'duration', 'pitch']
 VOCAB_SIZE = 128
 EPOCHS = 250
 TEMPERATURE = 1
+PROB = 0.3
 
 def prepare_data(training_data_path):
   all_notes = []
@@ -175,9 +176,9 @@ def create_model():
   model.compile(
     loss=loss,
     loss_weights={
-      'transition': 0.1,
+      'transition': 1.0,
       'duration':1.0,
-      'pitch': 0.05,
+      'pitch': 0.1,
     },
     optimizer=optimizer,
   )
@@ -212,6 +213,9 @@ def train_model(model, train_ds, val_ds, save_model_path):
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
   plt.savefig(save_model_path+'validation_loss.png') 
 
+def decision():
+    return np.random.random() < PROB
+
 def eval_model(model, raw_notes, out_file, instrument):
 
   sample_notes = np.stack([raw_notes[key] for key in KEY_ORDER], axis=1)
@@ -221,21 +225,35 @@ def eval_model(model, raw_notes, out_file, instrument):
   transition_max, duration_max = load_values('scaling.json')
 
   input_notes = (sample_notes[:SEQ_LENGTH] / np.array([transition_max, duration_max, VOCAB_SIZE]))
-
   first_note = int(input_notes[-1][-1]*VOCAB_SIZE)
-
+  last_note = input_notes[-1]
   generated_notes = []
   prev_end = 0
+
   for _ in range(NUM_PREDICTIONS):
-    transition, duration, pitch= predict_next_note(input_notes, model)
+    print("input note", last_note)
+    transition, duration, pitch = predict_next_note(input_notes, model)
     start = prev_end
     end = start + duration
-    input_note = (transition, duration, pitch)
+    #pitch rules
+    if decision():
+      print("pitch rules")
+      print(pitch)
+      transition = pitch - last_note[2]
+      input_note = (transition, duration, pitch/VOCAB_SIZE)
+    #transition rules
+    else:
+      print("transition rules")
+      pitch = last_note[2] + transition
+      input_note = (transition, duration, pitch/VOCAB_SIZE)
+
+
     generated_notes.append((*input_note, start, end))
     input_notes = np.delete(input_notes, 0, axis=0)
     input_notes = np.append(input_notes, np.expand_dims(input_note, 0), axis=0)
     prev_end = end
-
+    last_note = input_note
+    print("\n")
   generated_notes = pd.DataFrame(
       generated_notes, columns=(*KEY_ORDER, 'start', 'end'))
   
@@ -256,38 +274,34 @@ def add_noise(prediction):
 
 def predict_next_note(notes: np.ndarray, model: tf.keras.Model) -> int:
   """Generates a note IDs using a trained sequence model."""
-  transition_max, duration_max = load_values('scaling.json')
   # Add batch dimension
   inputs = tf.expand_dims(notes, 0)
 
   predictions = model.predict(inputs)
-  print("First prediction ", predictions["transition"][0][0])
 
-  predictions["transition"] *= transition_max
-  predictions["duration"] *= duration_max
-  predictions['pitch'] *= VOCAB_SIZE
-  print("prediction after scaling ",predictions["transition"][0][0])
+  predictions["transition"]
+  # predictions["duration"] *= duration_max
+  predictions['pitch']
+
   
   # predictions = add_noise(predictions)
 
 
   duration = predictions['duration']
-  transition_logits = predictions['transition']
-  pitch_logits = predictions['pitch']
+  transition = predictions['transition']
+  pitch = predictions['pitch']
 
-  pitch_logits /= TEMPERATURE
-  transition_logits /= TEMPERATURE
 
-  pitch = tf.random.categorical(pitch_logits, num_samples=1)
+  # pitch_logits /= TEMPERATURE
+  # transition_logits /= TEMPERATURE
+
+  pitch = tf.random.categorical(pitch, num_samples=1)
   pitch = tf.squeeze(pitch, axis=-1)
 
 
-  print(transition_logits)
-  transition = tf.random.categorical(transition_logits, num_samples=1)
-  print((transition))
+  # transition = tf.random.categorical(transition, num_samples=1)
   transition = tf.squeeze(transition, axis=-1)
-  print((transition))
-  print("\n")
+  
 
   duration = tf.squeeze(duration, axis=-1)
 
@@ -295,7 +309,7 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model) -> int:
   duration = tf.maximum(0.00001, duration)
   pitch = tf.maximum(0, pitch)
 
-  return float(transition), float(duration), int(pitch)
+  return float(transition), float(duration), float(pitch)
 
 def notes_to_midi(notes: pd.DataFrame, first_note, out_file: str, instrument_name: str, velocity: int = 100,) -> pretty_midi.PrettyMIDI:
   pm = pretty_midi.PrettyMIDI()
@@ -345,10 +359,10 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
 
 if __name__  == "__main__":
     
-  load_model = False
-  only_train = True
+  load_model = True
+  only_train = False
 
-  load_model_path = 'models/melody/beatles4/'
+  load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
   raw_notes, all_notes, seq_ds = prepare_data("data/beatles/melody")
 
