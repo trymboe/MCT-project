@@ -16,7 +16,7 @@ LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 KEY_ORDER = ['transition', 'duration', 'pitch']
 VOCAB_SIZE = 128
-EPOCHS = 250
+EPOCHS = 150
 TEMPERATURE = 1
 PROB = 0.3
 
@@ -359,8 +359,8 @@ def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
 
 if __name__  == "__main__":
     
-  load_model = True
-  only_train = False
+  load_model = False
+  only_train = True
 
   load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
@@ -375,10 +375,10 @@ if __name__  == "__main__":
   if load_model:
     model.load_weights(load_model_path)
   else:
-    train_model(model, val_ds, train_ds, "models/beatles/melody/model1/250_epochs")
+    train_model(model, val_ds, train_ds, "models/beatles/melody/model2/150_epochs")
   
   if not only_train:
-    generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model1/250_epochs", "Acoustic Grand Piano")
+    generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
     plot_piano_roll(generated_notes, first_note)
 
   plt.show()
