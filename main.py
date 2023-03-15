@@ -13,7 +13,7 @@ from transformer import prepare_data_transformers
 
 seed = 42
 # tf.random.set_seed(seed)
-np.random.seed(seed)
+# np.random.seed(seed)
 
 # Sampling rate for audio playback
 FS = 16000
@@ -46,7 +46,7 @@ def create_and_train_model(buffer_size, seq_length, seq_ds, save_model_path, bat
   dataset = (seq_ds.shuffle(buffer_size))
 
 
-  val_size = int(len(list(seq_ds))*0.15)
+  val_size = int(len(list(seq_ds))*0.10)
   
   train_ds = dataset.skip(val_size)
   val_ds = dataset.take(val_size)

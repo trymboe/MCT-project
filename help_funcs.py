@@ -96,7 +96,7 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
 
     return scale_pitch(inputs), labels
 
-  return sequences.map(split_labels, num_parallel_calls=tf.data.AUTOTUNE)
+  return sequences.map(split_labels, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 
 def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
@@ -142,25 +142,25 @@ def create_model(seq_length):
   x = tf.keras.layers.Dropout(0.3)(x)
   x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-  #separate part for pitch
-  out_pitch = tf.keras.layers.Dense(128, activation='relu')(x)
-  out_pitch = tf.keras.layers.BatchNormalization()(out_pitch)
-  out_pitch = tf.keras.layers.Dropout(0.3)(out_pitch)
+  # #separate part for pitch
+  # out_pitch = tf.keras.layers.Dense(128, activation='relu')(x)
+  # out_pitch = tf.keras.layers.BatchNormalization()(out_pitch)
+  # out_pitch = tf.keras.layers.Dropout(0.3)(out_pitch)
 
-  #separate part for step
-  out_step = tf.keras.layers.Dense(128, activation='relu')(x)
-  out_step = tf.keras.layers.BatchNormalization()(out_step)
-  out_step = tf.keras.layers.Dropout(0.3)(out_step)
+  # #separate part for step
+  # out_step = tf.keras.layers.Dense(128, activation='relu')(x)
+  # out_step = tf.keras.layers.BatchNormalization()(out_step)
+  # out_step = tf.keras.layers.Dropout(0.3)(out_step)
 
-  #separate part for duration
-  out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
-  out_dur = tf.keras.layers.BatchNormalization()(out_dur)
-  out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
+  # #separate part for duration
+  # out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
+  # out_dur = tf.keras.layers.BatchNormalization()(out_dur)
+  # out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
 
   outputs = {
-    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(out_pitch),
-    'step': tf.keras.layers.Dense(1, activation="softmax", name='step')(out_step),
-    'duration': tf.keras.layers.Dense(1, activation="softmax",  name='duration')(out_dur),
+    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(x),
+    'step': tf.keras.layers.Dense(1, activation="softmax", name='step')(x),
+    'duration': tf.keras.layers.Dense(1, activation="softmax",  name='duration')(x),
   }
   #pholophonic
   #variational encoders
@@ -205,7 +205,7 @@ def train_model(model, train_ds, val_ds):
   # ]
 
 
-  epochs = 10
+  epochs = 200
 
   # pitch_dataset = train_ds[:,:,0]
   # step_dataset = train_ds[:,:,1]
@@ -221,7 +221,7 @@ def train_model(model, train_ds, val_ds):
   history = model.fit(
       train_ds,
       epochs=epochs,
-      callbacks=callbacks,
+      # callbacks=callbacks,
       validation_data=val_ds,
   )
   return history
