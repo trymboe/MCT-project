@@ -193,6 +193,6 @@ if __name__ == "__main__":
 
   main(train_model = args['train'], dataset=args['dataset'],
       save_model_name=args['save_model_name'], load_model_name=args['load_model_name'],
-      instrument=args['instrument'], temperature=temp)
+      instrument=inst, temperature=temp)
   
   plt.show()
