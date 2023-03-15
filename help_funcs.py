@@ -192,20 +192,20 @@ def create_model(seq_length):
   
 
 def train_model(model, train_ds, val_ds):
-  callbacks = [
-    tf.keras.callbacks.ModelCheckpoint(
-        filepath='./training_checkpoints/ckpt_{epoch}',
-        save_weights_only=True),
-    tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss',
-        min_delta=0,
-        patience=25,
-        verbose=1,
-        restore_best_weights=True),
-  ]
+  # callbacks = [
+    # tf.keras.callbacks.ModelCheckpoint(
+    #     filepath='./training_checkpoints/ckpt_{epoch}',
+    #     save_weights_only=True),
+  #   tf.keras.callbacks.EarlyStopping(
+  #       monitor='val_loss',
+  #       min_delta=0,
+  #       patience=25,
+  #       verbose=1,
+  #       restore_best_weights=True),
+  # ]
 
 
-  epochs = 150
+  epochs = 10
 
   # pitch_dataset = train_ds[:,:,0]
   # step_dataset = train_ds[:,:,1]

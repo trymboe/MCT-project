@@ -107,6 +107,7 @@ def main(train_model=False, dataset=None, save_model_name=None, load_model_name=
   vocab_size = 128
   batch_size = 128
 
+  midi_instrument="Acoustic Grand Piano"
   if instrument == 'piano':
     midi_instrument="Acoustic Grand Piano"
   elif instrument == 'drums':
@@ -173,14 +174,14 @@ if __name__ == "__main__":
   parser.add_argument('-smn','--save_model_name')
   parser.add_argument('-lmn','--load_model_name')
   
-  parser.add_argument('--instrument', required=True)
+  parser.add_argument('--instrument')
   parser.add_argument('--temp')
 
   parser.add_argument('--test')
   args = vars(parser.parse_args())
 
   temp = None
-
+  inst = "piano" if not args['instrument'] else args['instrument']
 
 
   if args["train"] and (args["dataset"] is None or args["save_model_name"] is None):
