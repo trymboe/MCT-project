@@ -21,7 +21,7 @@ def isolate_track(midi_obj, instrument_name):
     return None
 
 
-path=("/Users/trymbo/Documents/Semester8/MCT4052/MCT-project/data/")
+path=("/Users/trymbo/Documents/Semester8/MCT4052/MCT-project/data/melody/test")
 track = 'MELODY'
 # for folder in os.listdir(path):
     # if '.DS_Store' not in folder:
@@ -38,7 +38,7 @@ for i in os.listdir(path):
 
             for ind, pm in enumerate(pm_tracks):
                 
-                pm.write(f"data/melody/{i}")
+                pm.write(f"data/melody/test/{i}")
 
 
 #Melody, Vocal, Clarinet, Lead - Flute, voc
