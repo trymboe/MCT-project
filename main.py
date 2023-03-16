@@ -33,21 +33,10 @@ def prepare_data(training_data_path):
       pm = pretty_midi.PrettyMIDI(full_path)
       
       pr = pm.get_piano_roll(fs=20)
-
-      plt.figure(figsize=(10, 3))
-      librosa.display.specshow(pr, y_axis='cqt_note', cmap=plt.cm.hot)
-      pm = piano_roll_to_pretty_midi(pr, fs=20)
-
-      pm.write('output.mid')
       all_rolls.append(pr)
     
-
-
   
-
-  return 1,2,3
-  train_notes = np.stack([all_notes[key] for key in KEY_ORDER], axis=1)
-  notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
+  notes_ds = tf.data.Dataset.from_tensor_slices()
 
   seq_ds = create_sequences(notes_ds)
 
