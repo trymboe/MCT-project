@@ -29,7 +29,6 @@ def prepare_data(training_data_path,seq_length=25, vocab_size=128):
   all_notes = pd.concat(all_notes)
 
   all_notes = normalize_pitch(all_notes)
-  notes_to_midi(all_notes, 'output.mid', MIDI_INSTRUMENT)
 
   key_order = ['pitch', 'step', 'duration']
   train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
