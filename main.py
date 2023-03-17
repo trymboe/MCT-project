@@ -28,7 +28,7 @@ def prepare_data(training_data_path,seq_length=25, vocab_size=128):
           all_notes.append(raw_notes)
   all_notes = pd.concat(all_notes)
 
-  all_notes = normalize_pitch(all_notes)
+  # all_notes = normalize_pitch(all_notes)
 
   key_order = ['pitch', 'step', 'duration']
   train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
@@ -104,7 +104,7 @@ def eval_model(model, key_order, raw_notes, seq_length, vocab_size, out_file, in
   generated_notes = pd.DataFrame(
       generated_notes, columns=(*key_order, 'start', 'end'))
   
-  generated_notes = normalize_pitch(generated_notes)
+  #generated_notes = normalize_pitch(generated_notes)
   out_pm = notes_to_midi(
       generated_notes, out_file=out_file, instrument_name=instrument)
 
