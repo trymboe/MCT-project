@@ -32,11 +32,19 @@ def prepare_data(training_data_path):
     if ".mid" in i:
       pm = pretty_midi.PrettyMIDI(full_path)
       
-      pr = pm.get_piano_roll(fs=20)
+      pr = pm.get_piano_roll(fs=20).transpose()
       all_rolls.append(pr)
-    
-  
-  notes_ds = tf.data.Dataset.from_tensor_slices()
+
+
+  for pr in all_rolls:
+    pr = remove_silence(pr, threshold=100)
+
+  # pm = piano_roll_to_pretty_midi(pr.transpose(), fs=20)
+
+  # pm.write('output.mid')
+
+  return 1,2,3
+  notes_ds = tf.data.Dataset.from_tensor_slices(all_rolls)
 
   seq_ds = create_sequences(notes_ds)
 
@@ -93,18 +101,53 @@ def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
     pm.instruments.append(instrument)
     return pm
 
+def remove_silence(pr, threshold=100):
+  """
+  Removes silence from a piano roll.
 
-def save_values(value1, value2, filename):
-  # Save the values to a file
-  with open(filename, 'w') as f:
-      json.dump({'transition_max': value1, 'duration_max': value2}, f)
+  Args:
+      pr (numpy.ndarray): A piano roll as a numpy array.
+      threshold (int): The number of consecutive silent timesteps required to remove a row.
 
-def load_values(filename): 
-  # Load the values from a file
+  Returns:
+      numpy.ndarray: The modified piano roll with silence removed.
+  """
+  # Compute the sum of each row in the piano roll
+  row_sums = np.sum(pr, axis=1)
+
+  # Find the silent rows
+  silent_rows = np.where(row_sums == 0)[0]
+  remove_rows = []
+  count = 1
+  for i in range(0,len(silent_rows)):
+    if silent_rows[i] == silent_rows[i-1] + 1:
+      count += 1
+    elif count >= threshold:
+      start_remove = silent_rows[i-1]-count+1
+      end_remove = start_remove + count
+      remove_rows.append(list(range(start_remove, end_remove)))
+      count = 1
+    else:
+      count = 1
+
+
+  if count >= threshold:
+    start_remove = silent_rows[i]-count+1
+    end_remove = start_remove + count
+    remove_rows.append(list(range(start_remove, end_remove)))
+
+
+  remove_rows = [num for sublist in remove_rows for num in sublist]
+  keep_rows = np.ones(pr.shape[0], dtype=bool)
+  keep_rows[remove_rows] = False
+
+  # use boolean indexing to remove the specified rows
+  pr = pr[keep_rows]
   
-  with open(filename, 'r') as f:
-      data = json.load(f)
-  return data['transition_max'], data['duration_max']
+
+  # Remove the silent rows from the piano roll
+
+  return pr
 
 def create_sequences(dataset: tf.data.Dataset) -> tf.data.Dataset:
   """Returns TF Dataset of sequence and label examples."""
@@ -416,7 +459,7 @@ if __name__  == "__main__":
 
   load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
-  raw_notes, all_notes, seq_ds = prepare_data("data/melody/test")
+  raw_notes, all_notes, seq_ds = prepare_data("data/melody")
   
   # buffer_size = len(all_notes) - SEQ_LENGTH
   # val_ds, train_ds = split_data(buffer_size, seq_ds)
