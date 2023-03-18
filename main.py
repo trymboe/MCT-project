@@ -14,7 +14,6 @@ from pretty_midi import PrettyMIDI, Instrument, Note
 
 np.set_printoptions(threshold=sys.maxsize)
 
-SEQ_LENGTH = 25
 BATCH_SIZE = 32
 NUM_PREDICTIONS = 120
 VALIDATION_SIZE = 0.15
@@ -24,6 +23,8 @@ VOCAB_SIZE = 128
 EPOCHS = 150
 TEMPERATURE = 1
 PROB = 0.3
+INPUT_LENGTH = 32
+LABEL_LENGTH = 1
 
 def prepare_data(training_data_path):
   all_rolls = []
@@ -35,20 +36,19 @@ def prepare_data(training_data_path):
       pr = pm.get_piano_roll(fs=20).transpose()
       all_rolls.append(pr)
 
+  for idx, pr in enumerate(all_rolls):
+    pr = remove_silence(pr, threshold=10)
+    pr[pr != 0] = 1
+    all_rolls[idx] = pr
 
-  for pr in all_rolls:
-    pr = remove_silence(pr, threshold=100)
+  seq_ds = create_sequences(all_rolls)
+  num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
+  print("Number of training points:", num_training_points)
 
-  # pm = piano_roll_to_pretty_midi(pr.transpose(), fs=20)
+  print(seq_ds.element_spec)
 
-  # pm.write('output.mid')
 
-  return 1,2,3
-  notes_ds = tf.data.Dataset.from_tensor_slices(all_rolls)
-
-  seq_ds = create_sequences(notes_ds)
-
-  return raw_notes, all_notes, seq_ds
+  return seq_ds
 
 def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
     '''Convert a Piano Roll array into a PrettyMidi object
@@ -149,36 +149,18 @@ def remove_silence(pr, threshold=100):
 
   return pr
 
-def create_sequences(dataset: tf.data.Dataset) -> tf.data.Dataset:
-  """Returns TF Dataset of sequence and label examples."""
-
-
-  # Take 1 extra for the labels
-  windows = dataset.window(SEQ_LENGTH+1, shift=1, stride=1,
-                              drop_remainder=True)
-  
-
-  # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
-  flatten = lambda x: x.batch(SEQ_LENGTH+1, drop_remainder=True)
-  sequences = windows.flat_map(flatten)
-
-
-  # Normalize transition
-  def scale_transition(x):
-    transition_max, duration_max = load_values('scaling.json')
-
-    x = x/[transition_max,duration_max, VOCAB_SIZE]
-    return x
-
-  # Split the labels
-  def split_labels(sequences):
-    scale_transition(sequences)
-    inputs = sequences[:-1]
-    labels_dense = sequences[-1]
-    labels = {key:labels_dense[i] for i,key in enumerate(KEY_ORDER)}
-    return inputs, labels
-
-  return sequences.map(split_labels, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+def create_sequences(piano_rolls, input_length=INPUT_LENGTH, label_length=LABEL_LENGTH):
+    # convert the list of numpy arrays to a single numpy array
+    piano_roll_array = np.concatenate(piano_rolls, axis=0)
+    # convert the numpy array to a tensorflow dataset
+    dataset = tf.data.Dataset.from_tensor_slices(piano_roll_array)
+    # split the dataset into input and label sequences
+    dataset = dataset.window(input_length + label_length, shift=1, stride=1, drop_remainder=True)
+    # flatten the windows into input and label sequences
+    dataset = dataset.flat_map(lambda window: window.batch(input_length + label_length, drop_remainder=True))
+    # separate the input and label sequences
+    dataset = dataset.map(lambda window: (window[:-label_length], window[-label_length:]))
+    return dataset
 
 def midi_to_notes(pm) -> pd.DataFrame:
   instrument = pm.instruments[0]
@@ -197,22 +179,28 @@ def midi_to_notes(pm) -> pd.DataFrame:
 
   return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
-def split_data(buffer_size, seq_ds):
+def split_data(dataset):
   '''
   This function creates and trains a model with all midi files found in the given path.
   The model is saved in the training_checkpoint folder.
   '''
-  dataset = (seq_ds.shuffle(buffer_size))
+  dataset = dataset.shuffle(buffer_size=len(list(dataset)))
 
-  val_size = int(len(list(seq_ds))*VALIDATION_SIZE)
+  # Split dataset into training and validation sets
+  train_size = int(1-VALIDATION_SIZE * len(list(dataset)))
+  train_dataset = dataset.take(train_size)
+  val_dataset = dataset.skip(train_size)
+
+  # Shuffle and batch the datasets
+  val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+  train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
   
-  train_ds = dataset.skip(val_size)
-  val_ds = dataset.take(val_size)
+  def squeeze_label(x, y):
+    return x, tf.squeeze(y)
 
-  val_ds = val_ds.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
-  train_ds = train_ds.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+  train_dataset = train_dataset.map(squeeze_label)
 
-  return val_ds, train_ds
+  return train_dataset, val_dataset
 
 def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
   mse = (y_true - y_pred) ** 2
@@ -220,7 +208,7 @@ def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
   return tf.reduce_mean(mse + positive_pressure)
 
 def create_model():
-  input_shape = (SEQ_LENGTH, len(KEY_ORDER))
+  input_shape = (INPUT_LENGTH, 128)
   
   inputs = tf.keras.Input(input_shape)
 
@@ -233,48 +221,18 @@ def create_model():
   x = tf.keras.layers.BatchNormalization()(x)
   x = tf.keras.layers.Dropout(0.3)(x)
 
+  outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x),
 
-  #separate part for transition
-  out_trans = tf.keras.layers.Dense(128, activation='relu')(x)
-  out_trans = tf.keras.layers.BatchNormalization()(out_trans)
-  out_trans = tf.keras.layers.Dropout(0.3)(out_trans)
-
-  #separate part for duration
-  out_dur = tf.keras.layers.Dense(128, activation='relu')(x) 
-  out_dur = tf.keras.layers.BatchNormalization()(out_dur)
-  out_dur = tf.keras.layers.Dropout(0.3)(out_dur)
-
-  #separate part for pitch
-  out_pitch = tf.keras.layers.Dense(128, activation='relu')(x)
-  out_pitch = tf.keras.layers.BatchNormalization()(out_pitch)
-  out_pitch = tf.keras.layers.Dropout(0.3)(out_pitch)
-
-  outputs = {
-    'transition': tf.keras.layers.Dense(1, activation="relu", name='transition')(out_trans),
-    'duration': tf.keras.layers.Dense(1, activation="relu",  name='duration')(out_dur),
-    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(out_pitch),
-  }
-  #pholophonic
-  #variational encoders
 
   model = tf.keras.Model(inputs, outputs)
 
-  loss = {
-        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(),
-        'transition': mse_with_positive_pressure,
-        'duration': mse_with_positive_pressure,
-  }
+  loss = tf.keras.losses.CategoricalCrossentropy(),
 
   optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
 
   
   model.compile(
     loss=loss,
-    loss_weights={
-      'transition': 1.0,
-      'duration':1.0,
-      'pitch': 0.1,
-    },
     optimizer=optimizer,
   )
 
@@ -459,19 +417,31 @@ if __name__  == "__main__":
 
   load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
-  raw_notes, all_notes, seq_ds = prepare_data("data/melody")
+  seq_ds = prepare_data("data/melody/test")
   
   # buffer_size = len(all_notes) - SEQ_LENGTH
-  # val_ds, train_ds = split_data(buffer_size, seq_ds)
+  train_ds, val_ds = split_data(seq_ds)
+
+  print(train_ds.element_spec)
   
-  # model, loss, optimizer = create_model()
-  # if load_model:
-  #   model.load_weights(load_model_path)
-  # else:
-  #   train_model(model, val_ds, train_ds, "models/beatles/melody/model2/150_epochs")
+  model, loss, optimizer = create_model()
+  if load_model:
+    model.load_weights(load_model_path)
+  else:
+    train_model(model, val_ds, train_ds, "models/beatles/melody/model2/150_epochs")
   
   # if not only_train:
   #   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
   #   plot_piano_roll(generated_notes, first_note)
 
   # plt.show()
+
+
+
+
+'''
+for input_seq, label_seq in dataset.take(5):
+    print("Input sequence:\n", input_seq.numpy())
+    print("Label sequence:\n", label_seq.numpy())
+    print()
+'''
