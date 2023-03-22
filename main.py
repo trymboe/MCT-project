@@ -12,7 +12,10 @@ import librosa.display
 
 from pretty_midi import PrettyMIDI, Instrument, Note
 
+from data_process import *
+
 np.set_printoptions(threshold=sys.maxsize)
+
 
 BATCH_SIZE = 32
 NUM_PREDICTIONS = 120
@@ -20,35 +23,13 @@ VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 128
-EPOCHS = 150
+EPOCHS = 2
 TEMPERATURE = 1
 PROB = 0.3
 INPUT_LENGTH = 32
 LABEL_LENGTH = 1
 
-def prepare_data(training_data_path):
-  all_rolls = []
-  for i in os.listdir(training_data_path):
-    full_path = training_data_path+'/'+i
-    if ".mid" in i:
-      pm = pretty_midi.PrettyMIDI(full_path)
-      
-      pr = pm.get_piano_roll(fs=20).transpose()
-      all_rolls.append(pr)
 
-  for idx, pr in enumerate(all_rolls):
-    pr = remove_silence(pr, threshold=10)
-    pr[pr != 0] = 1
-    all_rolls[idx] = pr
-
-  seq_ds = create_sequences(all_rolls)
-  num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
-  print("Number of training points:", num_training_points)
-
-  print(seq_ds.element_spec)
-
-
-  return seq_ds
 
 def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
     '''Convert a Piano Roll array into a PrettyMidi object
@@ -101,66 +82,6 @@ def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
     pm.instruments.append(instrument)
     return pm
 
-def remove_silence(pr, threshold=100):
-  """
-  Removes silence from a piano roll.
-
-  Args:
-      pr (numpy.ndarray): A piano roll as a numpy array.
-      threshold (int): The number of consecutive silent timesteps required to remove a row.
-
-  Returns:
-      numpy.ndarray: The modified piano roll with silence removed.
-  """
-  # Compute the sum of each row in the piano roll
-  row_sums = np.sum(pr, axis=1)
-
-  # Find the silent rows
-  silent_rows = np.where(row_sums == 0)[0]
-  remove_rows = []
-  count = 1
-  for i in range(0,len(silent_rows)):
-    if silent_rows[i] == silent_rows[i-1] + 1:
-      count += 1
-    elif count >= threshold:
-      start_remove = silent_rows[i-1]-count+1
-      end_remove = start_remove + count
-      remove_rows.append(list(range(start_remove, end_remove)))
-      count = 1
-    else:
-      count = 1
-
-
-  if count >= threshold:
-    start_remove = silent_rows[i]-count+1
-    end_remove = start_remove + count
-    remove_rows.append(list(range(start_remove, end_remove)))
-
-
-  remove_rows = [num for sublist in remove_rows for num in sublist]
-  keep_rows = np.ones(pr.shape[0], dtype=bool)
-  keep_rows[remove_rows] = False
-
-  # use boolean indexing to remove the specified rows
-  pr = pr[keep_rows]
-  
-
-  # Remove the silent rows from the piano roll
-
-  return pr
-
-def create_sequences(piano_rolls, input_length=INPUT_LENGTH, label_length=LABEL_LENGTH):
-    # convert the list of numpy arrays to a single numpy array
-    piano_roll_array = np.concatenate(piano_rolls, axis=0)
-    # convert the numpy array to a tensorflow dataset
-    dataset = tf.data.Dataset.from_tensor_slices(piano_roll_array)
-    # split the dataset into input and label sequences
-    dataset = dataset.window(input_length + label_length, shift=1, stride=1, drop_remainder=True)
-    # flatten the windows into input and label sequences
-    dataset = dataset.flat_map(lambda window: window.batch(input_length + label_length, drop_remainder=True))
-    # separate the input and label sequences
-    dataset = dataset.map(lambda window: (window[:-label_length], window[-label_length:]))
-    return dataset
 
 def midi_to_notes(pm) -> pd.DataFrame:
   instrument = pm.instruments[0]
@@ -184,21 +105,24 @@ def split_data(dataset):
   This function creates and trains a model with all midi files found in the given path.
   The model is saved in the training_checkpoint folder.
   '''
-  dataset = dataset.shuffle(buffer_size=len(list(dataset)))
-
+  # dataset = dataset.shuffle(buffer_size=len(list(dataset)))
+  
   # Split dataset into training and validation sets
-  train_size = int(1-VALIDATION_SIZE * len(list(dataset)))
+  train_size = int((1-VALIDATION_SIZE) * len(list(dataset)))
+
   train_dataset = dataset.take(train_size)
   val_dataset = dataset.skip(train_size)
 
-  # Shuffle and batch the datasets
+  print(len(list(val_dataset)))
+  # # batch the datasets
   val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
   train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
-  
+
   def squeeze_label(x, y):
     return x, tf.squeeze(y)
 
   train_dataset = train_dataset.map(squeeze_label)
+  val_dataset = val_dataset.map(squeeze_label)
 
   return train_dataset, val_dataset
 
@@ -212,7 +136,6 @@ def create_model():
   
   inputs = tf.keras.Input(input_shape)
 
-  # #Common part
   x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
   x = tf.keras.layers.Dropout(0.3)(x)
   x = tf.keras.layers.LSTM(512,return_sequences=True)(x)
@@ -220,13 +143,14 @@ def create_model():
   x = tf.keras.layers.LSTM(512)(x)
   x = tf.keras.layers.BatchNormalization()(x)
   x = tf.keras.layers.Dropout(0.3)(x)
+  x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-  outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x),
+  outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x)
 
 
   model = tf.keras.Model(inputs, outputs)
 
-  loss = tf.keras.losses.CategoricalCrossentropy(),
+  loss = tf.keras.losses.CategoricalCrossentropy()
 
   optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
 
@@ -266,149 +190,6 @@ def train_model(model, train_ds, val_ds, save_model_path):
   plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
   plt.savefig(save_model_path+'validation_loss.png') 
 
-def decision():
-    return np.random.random() < PROB
-
-def eval_model(model, raw_notes, out_file, instrument):
-
-  sample_notes = np.stack([raw_notes[key] for key in KEY_ORDER], axis=1)
-
-  # The initial sequence of notes; pitch is normalized similar to training
-  # sequences
-  transition_max, duration_max = load_values('scaling.json')
-
-  input_notes = (sample_notes[:SEQ_LENGTH] / np.array([transition_max, duration_max, VOCAB_SIZE]))
-  first_note = int(input_notes[-1][-1]*VOCAB_SIZE)
-  last_note = input_notes[-1]
-  generated_notes = []
-  prev_end = 0
-
-  for _ in range(NUM_PREDICTIONS):
-    print("input note", last_note)
-    transition, duration, pitch = predict_next_note(input_notes, model)
-    start = prev_end
-    end = start + duration
-    #pitch rules
-    if decision():
-      print("pitch rules")
-      print(pitch)
-      transition = pitch - last_note[2]
-      input_note = (transition, duration, pitch/VOCAB_SIZE)
-    #transition rules
-    else:
-      print("transition rules")
-      pitch = last_note[2] + transition
-      input_note = (transition, duration, pitch/VOCAB_SIZE)
-
-
-    generated_notes.append((*input_note, start, end))
-    input_notes = np.delete(input_notes, 0, axis=0)
-    input_notes = np.append(input_notes, np.expand_dims(input_note, 0), axis=0)
-    prev_end = end
-    last_note = input_note
-    print("\n")
-  generated_notes = pd.DataFrame(
-      generated_notes, columns=(*KEY_ORDER, 'start', 'end'))
-  
-    
-  out_pm = notes_to_midi(
-      generated_notes, first_note, out_file=out_file, instrument_name=instrument)
-
-  return generated_notes, first_note
-
-def add_noise(prediction):
-    # Add Gaussian noise to the output of the 'transition' neuron
-    noise = NOISE_SCALE * np.random.randn()
-    print("noise ",noise)
-    prediction['transition'] += noise
-
-    # Return the output
-    return prediction
-
-def predict_next_note(notes: np.ndarray, model: tf.keras.Model) -> int:
-  """Generates a note IDs using a trained sequence model."""
-  # Add batch dimension
-  inputs = tf.expand_dims(notes, 0)
-
-  predictions = model.predict(inputs)
-
-  predictions["transition"]
-  # predictions["duration"] *= duration_max
-  predictions['pitch']
-
-  
-  # predictions = add_noise(predictions)
-
-
-  duration = predictions['duration']
-  transition = predictions['transition']
-  pitch = predictions['pitch']
-
-
-  # pitch_logits /= TEMPERATURE
-  # transition_logits /= TEMPERATURE
-
-  pitch = tf.random.categorical(pitch, num_samples=1)
-  pitch = tf.squeeze(pitch, axis=-1)
-
-
-  # transition = tf.random.categorical(transition, num_samples=1)
-  transition = tf.squeeze(transition, axis=-1)
-  
-
-  duration = tf.squeeze(duration, axis=-1)
-
-  # `duration` values should be non-negative
-  duration = tf.maximum(0.00001, duration)
-  pitch = tf.maximum(0, pitch)
-
-  return float(transition), float(duration), float(pitch)
-
-def notes_to_midi(notes: pd.DataFrame, first_note, out_file: str, instrument_name: str, velocity: int = 100,) -> pretty_midi.PrettyMIDI:
-  pm = pretty_midi.PrettyMIDI()
-  instrument = pretty_midi.Instrument(
-      program=pretty_midi.instrument_name_to_program(
-          instrument_name))
-
-  prev_end = 0
-  cur_note = first_note
-  for i, note in notes.iterrows():
-    start = float(prev_end)
-    end = float(start + note['duration'])
-    new_note = pretty_midi.Note(
-        velocity=velocity,
-        pitch=int(cur_note),
-        start=start,
-        end=end,
-    )
-    instrument.notes.append(new_note)
-    prev_end = end
-    cur_note += note["transition"]
-    if cur_note > 127 or cur_note < 0:
-      cur_note = 60
-
-  pm.instruments.append(instrument)
-  pm.write(out_file+'_'+str(TEMPERATURE)+'.mid')
-  return pm
-
-def plot_piano_roll(notes: pd.DataFrame, last_note, count=None):
-  if count:
-    title = f'First {count} notes'
-  else:
-    title = f'Whole track'
-    count = len(notes['transition'])
-  plt.figure(figsize=(20, 4))
-  pitch = np.zeros(count)
-  pitch[0] = last_note + notes['transition'][0]
-  for i in range(1, count):
-      pitch[i] = pitch[i-1] + notes['transition'][i]
-  plot_pitch = np.stack([pitch, pitch], axis=0)
-  plot_start_stop = np.stack([notes['start'], notes['end']], axis=0)
-  plt.plot(
-      plot_start_stop[:, :count], plot_pitch[:, :count], color="b", marker=".")
-  plt.xlabel('Time [s]')
-  plt.ylabel('Pitch')
-  _ = plt.title(title)
 
 if __name__  == "__main__":
     
@@ -417,18 +198,16 @@ if __name__  == "__main__":
 
   load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
-  seq_ds = prepare_data("data/melody/test")
-  
-  # buffer_size = len(all_notes) - SEQ_LENGTH
+  seq_ds = prepare_data("data/melody/test", INPUT_LENGTH, LABEL_LENGTH)
+    
   train_ds, val_ds = split_data(seq_ds)
 
-  print(train_ds.element_spec)
-  
   model, loss, optimizer = create_model()
+
   if load_model:
     model.load_weights(load_model_path)
   else:
-    train_model(model, val_ds, train_ds, "models/beatles/melody/model2/150_epochs")
+      train_model(model, train_ds, val_ds, "models/model1/e_50")
   
   # if not only_train:
   #   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
