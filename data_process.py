@@ -4,14 +4,14 @@ import numpy as np
 import tensorflow as tf
 
 
-def prepare_data(training_data_path, input_length, label_length):
+def prepare_data(training_data_path, input_length, label_length, fs):
   all_rolls = []
   for i in os.listdir(training_data_path):
     full_path = training_data_path+'/'+i
     if ".mid" in i:
       pm = pretty_midi.PrettyMIDI(full_path)
       
-      pr = pm.get_piano_roll(fs=20).transpose()
+      pr = pm.get_piano_roll(fs=fs).transpose()
       all_rolls.append(pr)
 
   for idx, pr in enumerate(all_rolls):

@@ -1,3 +1,4 @@
+import os
 import sys
 import pretty_midi
 import collections
@@ -8,25 +9,27 @@ import matplotlib.pyplot as plt
 
 
 from data_process import *
+from generate import eval_model
 
 np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 32
-NUM_PREDICTIONS = 120
+NUM_PREDICTIONS = 600
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 128
-EPOCHS = 2
+EPOCHS = 15
 TEMPERATURE = 1
 PROB = 0.3
-INPUT_LENGTH = 32
+INPUT_LENGTH = 120
 LABEL_LENGTH = 1
+FS = 20
 
 
 
-def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
+def piano_roll_to_pretty_midi(piano_roll, fs=FS, program=0):
     '''Convert a Piano Roll array into a PrettyMidi object
      with a single instrument.
     Parameters
@@ -108,10 +111,9 @@ def split_data(dataset):
   train_dataset = dataset.take(train_size)
   val_dataset = dataset.skip(train_size)
 
-  print(len(list(val_dataset)))
   # # batch the datasets
-  val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
-  train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+  val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
+  train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
 
   def squeeze_label(x, y):
     return x, tf.squeeze(y)
@@ -131,13 +133,9 @@ def create_model():
   
   inputs = tf.keras.Input(input_shape)
 
-  x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
+  x = tf.keras.layers.LSTM(512)(inputs)
   x = tf.keras.layers.Dropout(0.3)(x)
-  x = tf.keras.layers.LSTM(512,return_sequences=True)(x)
-  x = tf.keras.layers.Dropout(0.3)(x)
-  x = tf.keras.layers.LSTM(512)(x)
   x = tf.keras.layers.BatchNormalization()(x)
-  x = tf.keras.layers.Dropout(0.3)(x)
   x = tf.keras.layers.Dense(256, activation='relu')(x)
 
   outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x)
@@ -159,9 +157,9 @@ def create_model():
 
 def train_model(model, train_ds, val_ds, save_model_path):
   callbacks = [
-    # tf.keras.callbacks.ModelCheckpoint(
-    #   filepath='./training_checkpoints/ckpt_{epoch}',
-    #   save_weights_only=True),
+    tf.keras.callbacks.ModelCheckpoint(
+      filepath='./training_checkpoints/ckpt_{epoch}',
+      save_weights_only=True),
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
@@ -186,16 +184,20 @@ def train_model(model, train_ds, val_ds, save_model_path):
   plt.savefig(save_model_path+'validation_loss.png') 
 
 
+
 if __name__  == "__main__":
     
-  load_model = False
-  only_train = True
-  dataset = "test" 
-  print("start")
+  load_model = True
+  only_train = False
+  dataset = "test"
 
-  load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
+  os.environ['TF_DEVICE']='/gpu:0'
 
-  seq_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH)
+
+  load_model_path = f'models/model1/{dataset}/e_{EPOCHS}'
+  out_file = f"results/melody/model1/{dataset}/e_{EPOCHS}"
+
+  seq_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, fs=FS)
     
   train_ds, val_ds = split_data(seq_ds)
 
@@ -205,7 +207,14 @@ if __name__  == "__main__":
     model.load_weights(load_model_path)
   else:
       train_model(model, train_ds, val_ds, f"models/model1/{dataset}/e_{EPOCHS}")
-  
+
+  if not only_train:
+    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS)
+    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), fs=FS)
+
+    pm.write(out_file+".mid")
+
+
   # if not only_train:
   #   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
   #   plot_piano_roll(generated_notes, first_note)
