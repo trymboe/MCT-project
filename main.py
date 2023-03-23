@@ -190,10 +190,12 @@ if __name__  == "__main__":
     
   load_model = False
   only_train = True
+  dataset = "test" 
+  print("start")
 
   load_model_path = 'models/beatles/melody/model1/250_epochs/250_epochs'
 
-  seq_ds = prepare_data("data/melody/test", INPUT_LENGTH, LABEL_LENGTH)
+  seq_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH)
     
   train_ds, val_ds = split_data(seq_ds)
 
@@ -202,7 +204,7 @@ if __name__  == "__main__":
   if load_model:
     model.load_weights(load_model_path)
   else:
-      train_model(model, train_ds, val_ds, "models/model1/e_50")
+      train_model(model, train_ds, val_ds, f"models/model1/{dataset}/e_{EPOCHS}")
   
   # if not only_train:
   #   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
