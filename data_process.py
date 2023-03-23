@@ -1,14 +1,8 @@
 import os
-import sys
-import json
 import pretty_midi
-import collections
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from tensorflow import keras
-import librosa.display
+
 
 def prepare_data(training_data_path, input_length, label_length):
   all_rolls = []

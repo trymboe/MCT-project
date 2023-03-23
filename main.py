@@ -1,16 +1,11 @@
-import os
 import sys
-import json
 import pretty_midi
 import collections
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from tensorflow import keras
-import librosa.display
 
-from pretty_midi import PrettyMIDI, Instrument, Note
 
 from data_process import *
 
