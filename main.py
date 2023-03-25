@@ -8,216 +8,60 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
-from data_process import *
+from data_process import prepare_data, piano_roll_to_pretty_midi
 from generate import eval_model
+from model import create_model, create_model_sequence, train_model
 
 np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 32
-NUM_PREDICTIONS = 600
+NUM_PREDICTIONS = 1
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 128
-EPOCHS = 15
+EPOCHS = 2
 TEMPERATURE = 1
 PROB = 0.3
 INPUT_LENGTH = 120
-LABEL_LENGTH = 1
-FS = 20
-
-
-
-def piano_roll_to_pretty_midi(piano_roll, fs=FS, program=0):
-    '''Convert a Piano Roll array into a PrettyMidi object
-     with a single instrument.
-    Parameters
-    ----------
-    piano_roll : np.ndarray, shape=(128,frames), dtype=int
-        Piano roll of one instrument
-    fs : int
-        Sampling frequency of the columns, i.e. each column is spaced apart
-        by ``1./fs`` seconds.
-    program : int
-        The program number of the instrument.
-    Returns
-    -------
-    midi_object : pretty_midi.PrettyMIDI
-        A pretty_midi.PrettyMIDI class instance describing
-        the piano roll.
-    '''
-    notes, frames = piano_roll.shape
-    pm = pretty_midi.PrettyMIDI()
-    instrument = pretty_midi.Instrument(program=program)
-
-    # pad 1 column of zeros so we can acknowledge inital and ending events
-    piano_roll = np.pad(piano_roll, [(0, 0), (1, 1)], 'constant')
-
-    # use changes in velocities to find note on / note off events
-    velocity_changes = np.nonzero(np.diff(piano_roll).T)
-
-    # keep track on velocities and note on times
-    prev_velocities = np.zeros(notes, dtype=int)
-    note_on_time = np.zeros(notes)
-
-    for time, note in zip(*velocity_changes):
-        # use time + 1 because of padding above
-        velocity = piano_roll[note, time + 1]
-        time = time / fs
-        if velocity > 0:
-            if prev_velocities[note] == 0:
-                note_on_time[note] = time
-                prev_velocities[note] = velocity
-        else:
-            pm_note = pretty_midi.Note(
-                velocity=prev_velocities[note],
-                pitch=note,
-                start=note_on_time[note],
-                end=time)
-            instrument.notes.append(pm_note)
-            prev_velocities[note] = 0
-    pm.instruments.append(instrument)
-    return pm
-
-
-def midi_to_notes(pm) -> pd.DataFrame:
-  instrument = pm.instruments[0]
-  notes = collections.defaultdict(list)
-
-  
-  # Sort the notes by start time
-  sorted_notes = sorted(instrument.notes, key=lambda note: note.start)
-  
-  prev_note = None
-  for note in sorted_notes:
-    notes["transition"].append(note.pitch - prev_note.pitch) if prev_note else notes["transition"].append(0)
-    notes["duration"].append(note.end - note.start)
-    notes["pitch"].append(note.pitch)
-    prev_note = note
-
-  return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
-
-def split_data(dataset):
-  '''
-  This function creates and trains a model with all midi files found in the given path.
-  The model is saved in the training_checkpoint folder.
-  '''
-  # dataset = dataset.shuffle(buffer_size=len(list(dataset)))
-  
-  # Split dataset into training and validation sets
-  train_size = int((1-VALIDATION_SIZE) * len(list(dataset)))
-
-  train_dataset = dataset.take(train_size)
-  val_dataset = dataset.skip(train_size)
-
-  # # batch the datasets
-  val_dataset = val_dataset.batch(BATCH_SIZE, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
-  train_dataset = train_dataset.batch(BATCH_SIZE, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
-
-  def squeeze_label(x, y):
-    return x, tf.squeeze(y)
-
-  train_dataset = train_dataset.map(squeeze_label)
-  val_dataset = val_dataset.map(squeeze_label)
-
-  return train_dataset, val_dataset
-
-def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
-  mse = (y_true - y_pred) ** 2
-  positive_pressure = 10 * tf.maximum(-y_pred, 0.0)
-  return tf.reduce_mean(mse + positive_pressure)
-
-def create_model():
-  input_shape = (INPUT_LENGTH, 128)
-  
-  inputs = tf.keras.Input(input_shape)
-
-  x = tf.keras.layers.LSTM(512)(inputs)
-  x = tf.keras.layers.Dropout(0.3)(x)
-  x = tf.keras.layers.BatchNormalization()(x)
-  x = tf.keras.layers.Dense(256, activation='relu')(x)
-
-  outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x)
-
-
-  model = tf.keras.Model(inputs, outputs)
-
-  loss = tf.keras.losses.CategoricalCrossentropy()
-
-  optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
-
-  
-  model.compile(
-    loss=loss,
-    optimizer=optimizer,
-  )
-
-  return model, loss, optimizer
-
-def train_model(model, train_ds, val_ds, save_model_path):
-  callbacks = [
-    tf.keras.callbacks.ModelCheckpoint(
-      filepath='./training_checkpoints/ckpt_{epoch}',
-      save_weights_only=True),
-    tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss',
-        min_delta=0,
-        patience=125,
-        verbose=1,
-        restore_best_weights=True),
-  ]
-
-  history = model.fit(
-      train_ds,
-      epochs=EPOCHS,
-      callbacks=callbacks,
-      validation_data=val_ds,
-  )
-
-  model.save_weights(save_model_path)
-
-  plt.plot(history.epoch, history.history['loss'], label='total training loss')
-  plt.savefig(save_model_path+'training_loss.png')
-  plt.figure()
-  plt.plot(history.epoch, history.history['val_loss'], label='total val loss')
-  plt.savefig(save_model_path+'validation_loss.png') 
-
-
+LABEL_LENGTH = 120
+# 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
+FS = 12
 
 if __name__  == "__main__":
     
-  load_model = True
-  only_train = False
-  dataset = "test"
+  train = True
+  sequence = True
+  dataset = "small"
+  model_name = "model2"
 
   os.environ['TF_DEVICE']='/gpu:0'
+  physical_devices = tf.config.list_physical_devices('GPU')
+  tf.config.experimental.set_virtual_device_configuration(
+      physical_devices[0],
+      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
 
+  load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}'
+  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}"
 
-  load_model_path = f'models/model1/{dataset}/e_{EPOCHS}'
-  out_file = f"results/melody/model1/{dataset}/e_{EPOCHS}"
+  train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+  if sequence:
+    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
+  else:
+    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE)
 
-  seq_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, fs=FS)
-    
-  train_ds, val_ds = split_data(seq_ds)
-
-  model, loss, optimizer = create_model()
-
-  if load_model:
+  if not train:
     model.load_weights(load_model_path)
   else:
-      train_model(model, train_ds, val_ds, f"models/model1/{dataset}/e_{EPOCHS}")
+      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}", EPOCHS)
 
-  if not only_train:
-    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS)
-    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), fs=FS)
+  if not train:
+    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
+    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), FS)
 
     pm.write(out_file+".mid")
 
-
-  # if not only_train:
-  #   generated_notes, first_note = eval_model(model, raw_notes, "results/beatles/melody/model2/50_epochs", "Acoustic Grand Piano")
-  #   plot_piano_roll(generated_notes, first_note)
 
   # plt.show()
 

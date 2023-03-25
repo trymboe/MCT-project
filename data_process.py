@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def prepare_data(training_data_path, input_length, label_length, fs):
+def prepare_data(training_data_path, input_length, label_length, fs, validation_size, batch_size):
   all_rolls = []
   for i in os.listdir(training_data_path):
     full_path = training_data_path+'/'+i
@@ -15,15 +15,17 @@ def prepare_data(training_data_path, input_length, label_length, fs):
       all_rolls.append(pr)
 
   for idx, pr in enumerate(all_rolls):
-    pr = remove_silence(pr, threshold=10)
-    pr[pr != 0] = 127
+    pr = remove_silence(pr, threshold=fs*3)
+    pr[pr != 0] = 1
     all_rolls[idx] = pr
 
   seq_ds = create_sequences(all_rolls, input_length, label_length)
   num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
   print("Number of training points:", num_training_points)
 
-  return seq_ds
+  train_ds, val_ds = split_data(seq_ds, validation_size, batch_size)
+
+  return train_ds, val_ds
 
 def remove_silence(pr, threshold=100):
   """
@@ -73,8 +75,8 @@ def remove_silence(pr, threshold=100):
 
   return pr
 
-
 def create_sequences(piano_rolls, input_length, label_length):
+    
     """
     Creates a TensorFlow dataset of input-label pairs from a list of piano roll arrays.
 
@@ -98,3 +100,80 @@ def create_sequences(piano_rolls, input_length, label_length):
 
     dataset = dataset.map(lambda window: (window[:-label_length], window[-label_length:]))
     return dataset
+
+def split_data(dataset, validation_size, batch_size):
+  '''
+  This function creates and trains a model with all midi files found in the given path.
+  The model is saved in the training_checkpoint folder.
+  '''
+  dataset = dataset.shuffle(buffer_size=len(list(dataset)))
+  
+  # Split dataset into training and validation sets
+  train_size = int((1-validation_size) * len(list(dataset)))
+
+  train_dataset = dataset.take(train_size)
+  val_dataset = dataset.skip(train_size)
+
+  # # batch the datasets
+  val_dataset = val_dataset.batch(batch_size, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
+  train_dataset = train_dataset.batch(batch_size, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
+
+  def squeeze_label(x, y):
+    return x, tf.squeeze(y)
+
+  train_dataset = train_dataset.map(squeeze_label)
+  val_dataset = val_dataset.map(squeeze_label)
+
+  return train_dataset, val_dataset
+
+def piano_roll_to_pretty_midi(piano_roll, fs, program=0):
+    '''Convert a Piano Roll array into a PrettyMidi object
+     with a single instrument.
+    Parameters
+    ----------
+    piano_roll : np.ndarray, shape=(128,frames), dtype=int
+        Piano roll of one instrument
+    fs : int
+        Sampling frequency of the columns, i.e. each column is spaced apart
+        by ``1./fs`` seconds.
+    program : int
+        The program number of the instrument.
+    Returns
+    -------
+    midi_object : pretty_midi.PrettyMIDI
+        A pretty_midi.PrettyMIDI class instance describing
+        the piano roll.
+    '''
+    notes, frames = piano_roll.shape
+    pm = pretty_midi.PrettyMIDI()
+    instrument = pretty_midi.Instrument(program=program)
+
+    # pad 1 column of zeros so we can acknowledge inital and ending events
+    piano_roll = np.pad(piano_roll, [(0, 0), (1, 1)], 'constant')
+
+    # use changes in velocities to find note on / note off events
+    velocity_changes = np.nonzero(np.diff(piano_roll).T)
+
+    # keep track on velocities and note on times
+    prev_velocities = np.zeros(notes, dtype=int)
+    note_on_time = np.zeros(notes)
+
+    for time, note in zip(*velocity_changes):
+        # use time + 1 because of padding above
+        velocity = piano_roll[note, time + 1]
+        time = time / fs
+        if velocity > 0:
+            if prev_velocities[note] == 0:
+                note_on_time[note] = time
+                prev_velocities[note] = velocity
+        else:
+            pm_note = pretty_midi.Note(
+                velocity=prev_velocities[note],
+                pitch=note,
+                start=note_on_time[note],
+                end=time)
+            instrument.notes.append(pm_note)
+            prev_velocities[note] = 0
+    pm.instruments.append(instrument)
+    return pm
+
