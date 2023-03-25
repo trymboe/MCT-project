@@ -15,13 +15,13 @@ from model import create_model, create_model_sequence, train_model
 np.set_printoptions(threshold=sys.maxsize)
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 NUM_PREDICTIONS = 1
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 128
-EPOCHS = 2
+EPOCHS = 30
 TEMPERATURE = 1
 PROB = 0.3
 INPUT_LENGTH = 120
@@ -36,11 +36,17 @@ if __name__  == "__main__":
   dataset = "small"
   model_name = "model2"
 
+  gb = 8
+
   os.environ['TF_DEVICE']='/gpu:0'
-  physical_devices = tf.config.list_physical_devices('GPU')
-  tf.config.experimental.set_virtual_device_configuration(
-      physical_devices[0],
-      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
+  gpus = tf.config.list_physical_devices('GPU')
+  if gpus:
+      gpu = gpus[0]
+      # Limit GPU memory to n*1GB
+      tf.config.experimental.set_virtual_device_configuration(gpu, [
+          tf.config.experimental.VirtualDeviceConfiguration(memory_limit=gb*1024)
+      ])
+
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}'
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}"
