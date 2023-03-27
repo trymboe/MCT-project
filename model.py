@@ -1,9 +1,3 @@
-import os
-import sys
-import pretty_midi
-import collections
-import numpy as np
-import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
@@ -65,7 +59,10 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
     callbacks = [
     tf.keras.callbacks.ModelCheckpoint(
         filepath='./training_checkpoints/ckpt_{epoch}',
-        save_weights_only=True),
+        save_weights_only=False,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True),
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,

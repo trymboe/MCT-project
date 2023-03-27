@@ -1,12 +1,5 @@
-import os
-import sys
-import pretty_midi
-import collections
-import random
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 def eval_model(model, dataset, input_length, num_predictions=120, sequence=False):
 
@@ -21,24 +14,39 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
 
     for i in range(num_predictions):
         if sequence:
-            next_note = predict_next_note(input_notes, model)
-            generated_notes = np.concatenate((input_notes, next_note), axis=0)
-            input_notes = np.delete(input_notes, 0, axis=0)
-            break
+            next_note = predict_next_note_sequence(input_notes, model)
+            generated_notes = np.concatenate((generated_notes, next_note), axis=0)
+            input_notes = next_note
 
             
         else:
             next_note = predict_next_note(input_notes, model)
             generated_notes[i+input_length] = next_note
             input_notes = np.delete(input_notes, 0, axis=0)
-            input_notes = np.append(input_notes, (next_note), axis=0)
+            # print(input_notes)
+            input_notes = np.append(input_notes, next_note, axis=0)
 
     generated_notes[generated_notes != 0] = 127
-    
+
     return generated_notes
 
+def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 2.0) -> int:
+    """Generates a note IDs using a trained sequence model."""
+    assert temperature > 0
 
-def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 0) -> int:
+    # Add batch dimension
+    inputs = tf.expand_dims(notes, 0)
+
+    predictions_logits = model.predict(inputs)
+    max_idx = get_index(predictions_logits, 1)
+    print(max_idx)
+    # Create a new array with 1 at the index of the maximum value
+    next_note = np.zeros_like(predictions_logits)
+    next_note[0][max_idx] = 1
+
+    return next_note
+
+def predict_next_note_sequence(notes: np.ndarray, model: tf.keras.Model, temperature: float = 0) -> int:
     """Generates a note IDs using a trained sequence model."""
     assert temperature >= 0
 
@@ -78,3 +86,10 @@ def get_index(prediction_logits, epsilon):
 
     print(chosen_indices)
     return chosen_indices
+
+    sorted_indices = np.argsort(prediction_logits)[::-1][0]
+    # Choose the first index with probability p, and the second index with probability 1-p
+    if np.random.random() < epsilon:
+        return sorted_indices[0]
+    else:
+        return sorted_indices[1]
