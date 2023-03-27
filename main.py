@@ -19,7 +19,7 @@ VOCAB_SIZE = 128
 EPOCHS = 15
 TEMPERATURE = 1
 PROB = 0.3
-INPUT_LENGTH = 120
+INPUT_LENGTH = 24
 LABEL_LENGTH = 1
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
@@ -27,7 +27,7 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = True
-  dataset = "test"
+  dataset = "xx_small"
   model_name = "model2"
   info = ""
 
