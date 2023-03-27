@@ -27,7 +27,7 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = True
-  dataset = "x_small"
+  dataset = "test"
   model_name = "model2"
   info = ""
 

@@ -12,7 +12,9 @@ def prepare_data(training_data_path, input_length, label_length, fs, validation_
       pm = pretty_midi.PrettyMIDI(full_path)
       
       pr = pm.get_piano_roll(fs=fs).transpose()
+      pr = get_relative_pitch(pr)
       all_rolls.append(pr)
+      exit()
 
   for idx, pr in enumerate(all_rolls):
     pr = remove_silence(pr, threshold=fs*3)
@@ -177,3 +179,6 @@ def piano_roll_to_pretty_midi(piano_roll, fs, program=0):
     pm.instruments.append(instrument)
     return pm
 
+def get_relative_pitch(pr):
+   for i in pr:
+      print(i)
