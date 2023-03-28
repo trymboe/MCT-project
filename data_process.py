@@ -12,12 +12,14 @@ def prepare_data(training_data_path, input_length, label_length, fs, validation_
       pm = pretty_midi.PrettyMIDI(full_path)
       
       pr = pm.get_piano_roll(fs=fs).transpose()
+      pr = remove_silence(pr, threshold=fs*3)
+      pr[pr != 0] = 1
+      # create a silence row
+      silence_row = np.zeros((pr.shape[0], 1))
+      pr = np.hstack((pr, silence_row))
+      pr = add_silence(pr)
       all_rolls.append(pr)
 
-  for idx, pr in enumerate(all_rolls):
-    pr = remove_silence(pr, threshold=fs*3)
-    pr[pr != 0] = 1
-    all_rolls[idx] = pr
 
   seq_ds = create_sequences(all_rolls, input_length, label_length)
   num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
@@ -177,3 +179,8 @@ def piano_roll_to_pretty_midi(piano_roll, fs, program=0):
     pm.instruments.append(instrument)
     return pm
 
+def add_silence(pr):
+  for timestep in pr:
+    if np.nonzero(timestep)[0].size:
+      timestep[128] = 1
+  return pr

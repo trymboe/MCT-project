@@ -8,7 +8,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
         input_notes = input_seq.numpy()[0]
 
 
-    generated_notes = np.empty((num_predictions + input_length,128))
+    generated_notes = np.empty((num_predictions + input_length,129))
 
     generated_notes[:input_length, :] = input_notes
 
@@ -17,8 +17,6 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
             next_note = predict_next_note_sequence(input_notes, model)
             generated_notes = np.concatenate((generated_notes, next_note), axis=0)
             input_notes = next_note
-
-            
         else:
             next_note = predict_next_note(input_notes, model)
             generated_notes[i+input_length] = next_note
@@ -26,6 +24,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
             # print(input_notes)
             input_notes = np.append(input_notes, next_note, axis=0)
 
+    generated_notes = generated_notes[:, :-1]
     generated_notes[generated_notes != 0] = 127
 
     return generated_notes
@@ -67,7 +66,6 @@ def predict_next_note_sequence(notes: np.ndarray, model: tf.keras.Model, tempera
 
     return predictions
 
-
 def get_index(prediction_logits, epsilon):
     # Create an array of random values to compare with epsilon
     rand_vals = np.random.rand(prediction_logits.shape[0])
@@ -93,3 +91,6 @@ def get_index(prediction_logits, epsilon):
         return sorted_indices[0]
     else:
         return sorted_indices[1]
+    
+
+

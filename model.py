@@ -1,9 +1,9 @@
-import tensorflow as tf
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 
 def create_model(input_length, learning_rate):
-    input_shape = (input_length, 128)
+    input_shape = (input_length, 129)
 
     inputs = tf.keras.Input(input_shape)
 
@@ -12,7 +12,7 @@ def create_model(input_length, learning_rate):
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-    outputs = tf.keras.layers.Dense(128, activation="softmax", name='piano_roll')(x)
+    outputs = tf.keras.layers.Dense(129, activation="softmax", name='piano_roll')(x)
 
 
     model = tf.keras.Model(inputs, outputs)
@@ -30,7 +30,7 @@ def create_model(input_length, learning_rate):
     return model, loss, optimizer
 
 def create_model_sequence(input_length, learning_rate):
-    input_shape = (input_length, 128)
+    input_shape = (input_length, 129)
 
     inputs = tf.keras.Input(input_shape)
 
@@ -39,7 +39,7 @@ def create_model_sequence(input_length, learning_rate):
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-    outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(128, activation="softmax", name='piano_roll'))(x)
+    outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(129, activation="softmax", name='piano_roll'))(x)
 
     model = tf.keras.Model(inputs, outputs)
 
@@ -60,7 +60,7 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
     tf.keras.callbacks.ModelCheckpoint(
         filepath='./training_checkpoints/ckpt_{epoch}',
         save_weights_only=False,
-        monitor='val_accuracy',
+        monitor='val_loss',
         mode='max',
         save_best_only=True),
     tf.keras.callbacks.EarlyStopping(
@@ -70,6 +70,7 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
         verbose=1,
         restore_best_weights=True),
     ]
+    print(len(list(val_ds)))
 
     history = model.fit(
         train_ds,
