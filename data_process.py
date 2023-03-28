@@ -19,7 +19,6 @@ def prepare_data(training_data_path, input_length, label_length, fs, validation_
     pr[pr != 0] = 1
     all_rolls[idx] = pr
   all_rolls = get_relative_pitch(all_rolls)
-  print(len(all_rolls))
 
   seq_ds = create_sequences(all_rolls, input_length, label_length)
   num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
@@ -108,7 +107,7 @@ def split_data(dataset, validation_size, batch_size):
   This function creates and trains a model with all midi files found in the given path.
   The model is saved in the training_checkpoint folder.
   '''
-  # dataset = dataset.shuffle(buffer_size=len(list(dataset)))
+  dataset = dataset.shuffle(buffer_size=len(list(dataset)))
   
   # Split dataset into training and validation sets
   train_size = int((1-validation_size) * len(list(dataset)))
@@ -184,12 +183,13 @@ def get_relative_pitch(pr):
   all_rolls = []
   for song in pr:
     
-    relative_pr = np.zeros((song.shape[0], 25))
+    relative_pr = np.zeros((song.shape[0], 26))
     prev_pitch = np.nonzero(song[0])[0]
     i = 1
+    
     while not prev_pitch.size:
-           prev_pitch = np.nonzero(song[i])[0]
-           i += 1
+      prev_pitch = np.nonzero(song[i])[0]
+      i += 1
 
     for idx, note in enumerate(song):
       nonzero = np.nonzero(note)[0]
@@ -201,6 +201,8 @@ def get_relative_pitch(pr):
            transition = transition%13
         relative_pr[idx][transition+12] = 1
         prev_pitch = nonzero[0]
+      else:
+         relative_pr[idx][25] = 1
 
 
     all_rolls.append(relative_pr)
@@ -215,8 +217,9 @@ def relative_pitch_to_pretty_midi(pr, fs):
     transition = np.nonzero(timestep)[0]
 
     next_note = np.zeros((128))
-    if transition.size:
-      print(transition[0])
+          
+    if transition != 25:
+
       index = prev_note+transition[0]-12
       if index < 127:
         next_note[index] = 127
@@ -225,8 +228,10 @@ def relative_pitch_to_pretty_midi(pr, fs):
          next_note[index] = 127
          
       prev_note = prev_note+transition[0]-12
+      new_song[i] = next_note
 
-    new_song[i] = next_note
+       
+
   
   return piano_roll_to_pretty_midi(new_song.transpose(), fs)
   

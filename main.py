@@ -10,16 +10,16 @@ from model import create_model, create_model_sequence, train_model
 np.set_printoptions(threshold=sys.maxsize)
 
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 NUM_PREDICTIONS = 1
 VALIDATION_SIZE = 0.15
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.001
 NOISE_SCALE = 1
-VOCAB_SIZE = 128
-EPOCHS = 2
+VOCAB_SIZE = 26
+EPOCHS = 15
 TEMPERATURE = 1
 PROB = 0.3
-INPUT_LENGTH = 120
+INPUT_LENGTH = 72
 LABEL_LENGTH = 1
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
@@ -27,7 +27,7 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = True
-  dataset = "test"
+  dataset = "xx_small"
   model_name = "model2"
 
   gb = 8
@@ -41,12 +41,15 @@ if __name__  == "__main__":
           tf.config.experimental.VirtualDeviceConfiguration(memory_limit=gb*1024)
       ])
 
-
+  
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}'
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
 
   if sequence:
-    train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    if train:
+      train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    else:
+       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
   else:
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)

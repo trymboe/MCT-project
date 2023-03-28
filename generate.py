@@ -8,10 +8,17 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
         input_notes = input_seq.numpy()[0]
 
 
-    generated_notes = np.empty((num_predictions + input_length,25))
+    generated_notes = np.empty((input_length,26))
+
 
     generated_notes[:input_length, :] = input_notes
 
+    print(generated_notes.shape)
+    print(input_notes.shape)
+
+    # print(len(np.nonzero(input_notes)[1]))
+    # print(len(np.nonzero(generated_notes)[1]))
+    print("generated_notes", np.nonzero(generated_notes)[1])
     for i in range(num_predictions):
         if sequence:
             next_note = predict_next_note_sequence(input_notes, model)
@@ -23,11 +30,10 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
             next_note = predict_next_note(input_notes, model)
             generated_notes[i+input_length] = next_note
             input_notes = np.delete(input_notes, 0, axis=0)
-            # print(input_notes)
             input_notes = np.append(input_notes, next_note, axis=0)
 
     generated_notes[generated_notes != 0] = 1
-
+    # print("generated_notes", np.nonzero(generated_notes)[1])
     return generated_notes
 
 def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 2.0) -> int:
@@ -39,7 +45,7 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
 
     predictions_logits = model.predict(inputs)
     max_idx = get_index(predictions_logits, 1)
-    print(max_idx)
+    print("max_idx", max_idx)
     # Create a new array with 1 at the index of the maximum value
     next_note = np.zeros_like(predictions_logits)
     next_note[0][max_idx] = 1
@@ -55,15 +61,14 @@ def predict_next_note_sequence(notes: np.ndarray, model: tf.keras.Model, tempera
 
     predictions_logits = np.squeeze(model.predict(inputs), axis=0)
 
-    index = get_index(predictions_logits, temperature)
+    # index = get_index(predictions_logits, temperature)
 
     max_idx = np.argmax(predictions_logits, axis=1)
 
-    print(max_idx)
-    
+    print("max_idx",max_idx)
     predictions = np.zeros_like(predictions_logits)
-    predictions[np.arange(predictions_logits.shape[0]), index] = 1
-    print(predictions.shape)
+    predictions[np.arange(predictions_logits.shape[0]), max_idx] = 1
+
 
     return predictions
 
