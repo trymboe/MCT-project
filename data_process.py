@@ -15,11 +15,11 @@ def prepare_data(training_data_path, input_length, label_length, fs, validation_
       all_rolls.append(pr)
 
   for idx, pr in enumerate(all_rolls):
-    pr = remove_silence(pr, threshold=fs*3)
+    pr = remove_silence(pr, threshold=fs)
     pr[pr != 0] = 1
     all_rolls[idx] = pr
   all_rolls = get_relative_pitch(all_rolls)
-  exit()
+  print(len(all_rolls))
 
   seq_ds = create_sequences(all_rolls, input_length, label_length)
   num_training_points = seq_ds.reduce(0, lambda x, _: x + 1).numpy()
@@ -108,7 +108,7 @@ def split_data(dataset, validation_size, batch_size):
   This function creates and trains a model with all midi files found in the given path.
   The model is saved in the training_checkpoint folder.
   '''
-  dataset = dataset.shuffle(buffer_size=len(list(dataset)))
+  # dataset = dataset.shuffle(buffer_size=len(list(dataset)))
   
   # Split dataset into training and validation sets
   train_size = int((1-validation_size) * len(list(dataset)))
@@ -183,23 +183,50 @@ def get_relative_pitch(pr):
   count = 0
   all_rolls = []
   for song in pr:
-    relative_pr = np.zeros((song.shape[0], 23))
+    
+    relative_pr = np.zeros((song.shape[0], 25))
     prev_pitch = np.nonzero(song[0])[0]
-    print(prev_pitch)
+    i = 1
+    while not prev_pitch.size:
+           prev_pitch = np.nonzero(song[i])[0]
+           i += 1
 
     for idx, note in enumerate(song):
       nonzero = np.nonzero(note)[0]
       if nonzero.size:
         new_note = nonzero[0]
-        transition = abs(new_note - prev_pitch)
-        if abs(transition) > 11:
+        transition = (new_note - prev_pitch)
+        if abs(transition) > 12:
            count += 1
-           transition = transition%12
-        relative_pr[idx][transition+11] = 1
+           transition = transition%13
+        relative_pr[idx][transition+12] = 1
         prev_pitch = nonzero[0]
-        print(relative_pr)
-    exit()
+
+
     all_rolls.append(relative_pr)
 
-  print(count)
+  return all_rolls
 
+def relative_pitch_to_pretty_midi(pr, fs):
+  prev_note = 60
+  new_song = np.zeros((pr.shape[0],128))
+
+  for i, timestep in enumerate(pr):
+    transition = np.nonzero(timestep)[0]
+
+    next_note = np.zeros((128))
+    if transition.size:
+      print(transition[0])
+      index = prev_note+transition[0]-12
+      if index < 127:
+        next_note[index] = 127
+      else:
+         index = 60 
+         next_note[index] = 127
+         
+      prev_note = prev_note+transition[0]-12
+
+    new_song[i] = next_note
+  
+  return piano_roll_to_pretty_midi(new_song.transpose(), fs)
+  

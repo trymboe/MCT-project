@@ -8,7 +8,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
         input_notes = input_seq.numpy()[0]
 
 
-    generated_notes = np.empty((num_predictions + input_length,128))
+    generated_notes = np.empty((num_predictions + input_length,25))
 
     generated_notes[:input_length, :] = input_notes
 
@@ -26,7 +26,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
             # print(input_notes)
             input_notes = np.append(input_notes, next_note, axis=0)
 
-    generated_notes[generated_notes != 0] = 127
+    generated_notes[generated_notes != 0] = 1
 
     return generated_notes
 

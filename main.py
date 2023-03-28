@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from data_process import prepare_data, piano_roll_to_pretty_midi
+from data_process import prepare_data, relative_pitch_to_pretty_midi
 from generate import eval_model
 from model import create_model, create_model_sequence, train_model
 
@@ -11,15 +11,15 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 16
-NUM_PREDICTIONS = 4
+NUM_PREDICTIONS = 1
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 128
-EPOCHS = 15
+EPOCHS = 2
 TEMPERATURE = 1
 PROB = 0.3
-INPUT_LENGTH = 24
+INPUT_LENGTH = 120
 LABEL_LENGTH = 1
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
@@ -27,9 +27,8 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = True
-  dataset = "xx_small"
+  dataset = "test"
   model_name = "model2"
-  info = ""
 
   gb = 8
 
@@ -43,11 +42,11 @@ if __name__  == "__main__":
       ])
 
 
-  load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}'
-  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}"
+  load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}'
+  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
 
   if sequence:
-    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
   else:
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
@@ -56,11 +55,11 @@ if __name__  == "__main__":
   if not train:
     model.load_weights(load_model_path)
   else:
-      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}{info}", EPOCHS)
+      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}", EPOCHS)
 
   if not train:
     generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
-    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), FS)
+    pm = relative_pitch_to_pretty_midi(generated_notes, FS)
 
     pm.write(out_file+".mid")
 
