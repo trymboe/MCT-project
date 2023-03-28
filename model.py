@@ -37,6 +37,9 @@ def create_model_sequence(input_length, learning_rate):
     x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
 
     outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(26, activation="softmax", name='piano_roll'))(x)
@@ -45,7 +48,7 @@ def create_model_sequence(input_length, learning_rate):
 
     loss = tf.keras.losses.BinaryCrossentropy()
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
 
 
     model.compile(

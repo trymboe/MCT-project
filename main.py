@@ -11,14 +11,12 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 32
-NUM_PREDICTIONS = 1
+NUM_PREDICTIONS = 4
 VALIDATION_SIZE = 0.15
-LEARNING_RATE = 0.001
-NOISE_SCALE = 1
+LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 15
+EPOCHS = 10
 TEMPERATURE = 1
-PROB = 0.3
 INPUT_LENGTH = 72
 LABEL_LENGTH = 1
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
@@ -27,8 +25,8 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = True
-  dataset = "xx_small"
-  model_name = "model2"
+  dataset = "test"
+  model_name = "model3"
 
   gb = 8
 
