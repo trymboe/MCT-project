@@ -15,7 +15,7 @@ NUM_PREDICTIONS = 4
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 10
+EPOCHS = 30
 TEMPERATURE = 1
 INPUT_LENGTH = 72
 LABEL_LENGTH = 1
@@ -23,9 +23,9 @@ LABEL_LENGTH = 1
 FS = 12
 
 if __name__  == "__main__":
-  train = False
+  train = True
   sequence = True
-  dataset = "test"
+  dataset = "small"
   model_name = "model3"
 
   gb = 8
@@ -56,7 +56,7 @@ if __name__  == "__main__":
   if not train:
     model.load_weights(load_model_path)
   else:
-      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}", EPOCHS)
+      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_RMS", EPOCHS)
 
   if not train:
     generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
