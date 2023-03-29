@@ -15,10 +15,11 @@ NUM_PREDICTIONS = 4
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 30
+EPOCHS = 100
 TEMPERATURE = 1
 INPUT_LENGTH = 72
 LABEL_LENGTH = 1
+OPTIMIZER = "RMS"
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
@@ -26,7 +27,7 @@ if __name__  == "__main__":
   train = True
   sequence = True
   dataset = "small"
-  model_name = "model3"
+  model_name = "model2"
 
   gb = 8
 
@@ -40,23 +41,23 @@ if __name__  == "__main__":
       ])
 
   
-  load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}'
-  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
+  load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{OPTIMIZER}'
+  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{OPTIMIZER}"
 
   if sequence:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
        train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
+    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
   else:
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE)
+    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
 
   if not train:
     model.load_weights(load_model_path)
   else:
-      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_RMS", EPOCHS)
+      train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{OPTIMIZER}", EPOCHS)
 
   if not train:
     generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
@@ -66,9 +67,6 @@ if __name__  == "__main__":
 
 
   # plt.show()
-
-
-
 
 '''
 for input_seq, label_seq in dataset.take(5):
