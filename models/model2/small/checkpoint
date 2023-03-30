@@ -1,2 +1,2 @@
-model_checkpoint_path: "e_50_10_Adam"
-all_model_checkpoint_paths: "e_50_10_Adam"
+model_checkpoint_path: "e_100_20_<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop object at 0x7f76600af490>"
+all_model_checkpoint_paths: "e_100_20_<tensorflow.python.keras.optimizer_v2.rmsprop.RMSprop object at 0x7f76600af490>"
