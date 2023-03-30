@@ -10,13 +10,13 @@ from model import create_model, create_model_sequence, train_model
 np.set_printoptions(threshold=sys.maxsize)
 
 
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 NUM_PREDICTIONS = 4
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-EPOCHS = 15
+EPOCHS = 20
 TEMPERATURE = 1
 PROB = 0.3
 INPUT_LENGTH = 40
@@ -46,7 +46,10 @@ if __name__  == "__main__":
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
 
   if sequence:
-    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    if train:
+      train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    else:
+      train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
   else:
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
