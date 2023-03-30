@@ -3,47 +3,41 @@ import matplotlib.pyplot as plt
 
 
 def create_model(input_length, learning_rate, optimizer):
-  input_shape = (input_length, 3)
-  
+    input_shape = (input_length, 3)
+    
 
-  inputs = tf.keras.Input(input_shape)
+    inputs = tf.keras.Input(input_shape)
 
-  x = tf.keras.layers.LSTM(512)(inputs)
-  x = tf.keras.layers.Dropout(0.3)(x)
-  x = tf.keras.layers.BatchNormalization()(x)
-  x = tf.keras.layers.Dense(256, activation='relu')(x)
+    x = tf.keras.layers.LSTM(512)(inputs)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-  outputs = {
-    'pitch': tf.keras.layers.Dense(128, activation="softmax", name='pitch')(x),
-    'step': tf.keras.layers.Dense(1, activation="softmax", name='step')(x),
-    'duration': tf.keras.layers.Dense(1, activation="softmax",  name='duration')(x),
-  }
+    outputs = tf.keras.layers.Dense(3, activation="softmax")(x)
+    outputs = tf.keras.layers.Reshape((1, 3))(outputs)
 
 
-  model = tf.keras.Model(inputs, outputs)
 
-  loss = tf.keras.losses.BinaryCrossentropy()
+    model = tf.keras.Model(inputs, outputs)
 
-  if optimizer == "RMS":
-      optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
-  elif optimizer == "Adam":
-      optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-  else:
-      print("Found no optimizer called", optimizer)
-      exit()
-  
-  model.compile(
-    loss=loss,
-    #make loss the weighted sum since pitch loss is much higher
-    loss_weights={
-        'pitch': 0.05,
-        'step': 1.0,
-        'duration':1.0,
-    },
-    optimizer=optimizer,
-    )
+    loss = tf.keras.losses.MeanSquaredError()
 
-  return model, loss, optimizer
+    if optimizer == "RMS":
+        optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
+    elif optimizer == "Adam":
+        optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    else:
+        print("Found no optimizer called", optimizer)
+        exit()
+    
+    model.compile(
+        loss=loss,
+        #make loss the weighted sum since pitch loss is much higher
+
+        optimizer=optimizer,
+        )
+
+    return model, loss, optimizer
 
 def create_model_sequence(input_length, learning_rate, optimizer):
     input_shape = (input_length, 3)
@@ -53,16 +47,13 @@ def create_model_sequence(input_length, learning_rate, optimizer):
     x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-    outputs = {
-      'pitch': tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(128, activation="softmax", name='pitch')(x)),
-      'step': tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation="softmax", name='step')(x)),
-      'duration': tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation="softmax",  name='duration')(x)),
-    }
+    outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(3, activation="softmax"))(x)
 
     model = tf.keras.Model(inputs, outputs)
 
-    loss = tf.keras.losses.BinaryCrossentropy()
+    loss = tf.keras.losses.MeanSquaredError()
 
     if optimizer == "RMS":
         optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
@@ -79,7 +70,13 @@ def create_model_sequence(input_length, learning_rate, optimizer):
 
     return model, loss, optimizer
 
+def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
+  mse = (y_true - y_pred) ** 2
+  positive_pressure = 10 * tf.maximum(-y_pred, 0.0)
+  return tf.reduce_mean(mse + positive_pressure)
+
 def train_model(model, train_ds, val_ds, save_model_path, epochs):
+
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath='./training_checkpoints/ckpt_{epoch}',
@@ -94,7 +91,6 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
             verbose=1,
             restore_best_weights=True),
     ]
-
 
     history = model.fit(
         train_ds,

@@ -6,7 +6,7 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-def prepare_data(training_data_path, input_length, vocab_size, validation_size, batch_size):
+def prepare_data(training_data_path, input_length, label_length, vocab_size, validation_size, batch_size):
     all_notes = []
     for i in os.listdir(training_data_path):
         full_path = training_data_path+'/'+i
@@ -15,20 +15,16 @@ def prepare_data(training_data_path, input_length, vocab_size, validation_size, 
             raw_notes = midi_to_notes(pm)
             all_notes.append(raw_notes)
     all_notes = pd.concat(all_notes)
-
+    print("Number of training points:", len(all_notes))
     # all_notes = normalize_pitch(all_notes)
 
     key_order = ['pitch', 'step', 'duration']
     train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
-    notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
 
-    seq_ds = create_sequences(notes_ds, input_length, vocab_size)
-    print(seq_ds)
-    exit()
+    seq_ds = create_sequences(train_notes, input_length, label_length, vocab_size)
+
     train_ds, val_ds = split_data(seq_ds, validation_size, batch_size)
-    for input_seq, label in seq_ds.take(1):
-        print(input_seq)
-        print(label)
+
 
     return train_ds, val_ds
 
@@ -40,35 +36,18 @@ def normalize_pitch(notes):
       count += 1
   return notes
 
-def create_sequences(dataset: tf.data.Dataset, input_length: int, vocab_size = 128,) -> tf.data.Dataset:
-  """Returns TF Dataset of sequence and label examples."""
-  key_order = ['pitch', 'step', 'duration']
-  input_length = input_length+1
+def create_sequences(notes, input_length, label_length, vocab_size):
 
-  # Take 1 extra for the labels
-  windows = dataset.window(input_length, shift=1, stride=1,
-                              drop_remainder=True)
-  
+    def scale_pitch(x):
+        x = x/[vocab_size,1.0,1.0]
+        return x
+    dataset = tf.data.Dataset.from_tensor_slices(notes)
+    dataset = dataset.window(input_length + label_length, shift=1, stride=1, drop_remainder=True)
 
-  # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
-  flatten = lambda x: x.batch(input_length, drop_remainder=True)
-  sequences = windows.flat_map(flatten)
+    dataset = dataset.flat_map(lambda window: window.batch(input_length + label_length, drop_remainder=True))
 
-
-  # Normalize note pitch
-  def scale_pitch(x):
-    x = x/[vocab_size,1.0,1.0]
-    return x
-
-  # Split the labels
-  def split_labels(sequences):
-    inputs = sequences[:-1]
-    labels_dense = sequences[-1]
-    labels = {key:labels_dense[i] for i,key in enumerate(key_order)}
-
-    return scale_pitch(inputs), labels
-
-  return sequences.map(split_labels, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    dataset = dataset.map(lambda window: (scale_pitch(window[:-label_length]), scale_pitch(window[-label_length:])))
+    return dataset
 
 def midi_to_notes(pm) -> pd.DataFrame:
   instrument = pm.instruments[0]
@@ -126,7 +105,7 @@ def notes_to_midi(notes: pd.DataFrame, out_file: str, instrument_name: str, velo
     prev_start = start
 
   pm.instruments.append(instrument)
-  pm.write(out_file)
+
   return pm
 
 def split_data(dataset, validation_size, batch_size):
@@ -138,7 +117,7 @@ def split_data(dataset, validation_size, batch_size):
     train_ds = dataset.skip(val_size)
     val_ds = dataset.take(val_size)
 
-    val_ds = val_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
-    train_ds = train_ds.batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.experimental.AUTOTUNE)
+    val_ds = val_ds.batch(batch_size, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
+    train_ds = train_ds.batch(batch_size, drop_remainder=True)#.cache().prefetch(tf.data.experimental.AUTOTUNE)
 
     return train_ds, val_ds
