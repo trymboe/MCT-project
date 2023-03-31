@@ -23,18 +23,19 @@ FS = 16000
 EPOCHS = 100
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.001
-INPUT_LENGTH = 20
 VOCAB_SIZE = 128
 BATCH_SIZE = 64
 KEY_ORDER = ['pitch', 'step', 'duration']
-NUM_PREDICTIONS = 5
 VALIDATION_SIZE = 0.15
 TEMPERATURE = 1
+
+NUM_PREDICTIONS = 5
+INPUT_LENGTH = 20
 
 
 if __name__ == "__main__":
 
-  train = True
+  train = False
   sequence = True
   dataset = "small"
   model_name = "model2"
