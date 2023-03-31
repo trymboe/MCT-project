@@ -39,7 +39,7 @@ if __name__ == "__main__":
   sequence = True
   dataset = "small"
   model_name = "model2"
-  optimizer = "RMS"
+  optimizer = "Adam"
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}'
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}"
@@ -49,12 +49,12 @@ if __name__ == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, optimizer)
+    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, optimizer)
   else:
 
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
 
-    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE, optimizer)
+    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, optimizer)
 
   if not train:
     model.load_weights(load_model_path)

@@ -15,6 +15,8 @@ For now, all parameters needs to be adjusted in the main.py file.
 
 **NUM_PREDICTIONS:** The number of notes/timesteps to be generated. If the model predicts a sequence, this is the number of sequences that will be generated. Only for evaluation of model. 
 
+**EPOCHS:** The number of epochs the model shall be trained on.
+
 **dataset:** What dataset the model should be trained on.
 "full"    : 909 songs
 "small"   : 90 songs (10% of full)
@@ -31,10 +33,25 @@ For now, all parameters needs to be adjusted in the main.py file.
 "Adam" : Adam
 
 ## Training and evaluation
-After setting the parameters to your likeing, you can train a model, and the model will be saved. If you want to evaluate this exact model, you just switch "train" to False, and remain the exact same parameters, and the model will be evaluated
+After setting the parameters to your likeing, you can train a model, and the model will be saved. If you want to evaluate this exact model, you just switch "train" to False, and remain the exact same parameters, and the model will be evaluated.
+
+Each model is saved so that it knows what parameters it was trained on, and when evaluating, the parameters needs to be the same for the right model to be loaded.
+
+NOTE: The first notes are not generated, but the input to the model
 
 ## Pretrained models
 There are some pretrained models in the models directory.
+To run one of them, set these parameter:
+train        : False
+sequence     : True
+dataset      : "small"
+EPOCHS       : 100
+optimizer    : "Adam"
+INPUT_LENGTH : 20
+model_name   : "model2"
+
+The results can be found in results/melody/model2/small
+
 
 # File structure
 The file structure is set up to make running and evaluation as flawless as possible.
