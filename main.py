@@ -11,23 +11,24 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 64
-NUM_PREDICTIONS = 4
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-EPOCHS = 200
 TEMPERATURE = 1
 PROB = 0.3
-INPUT_LENGTH = 40
-LABEL_LENGTH = 1
+
+
+NUM_PREDICTIONS = 20
+EPOCHS = 25
+INPUT_LENGTH = 20
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
 if __name__  == "__main__":
-  train = True
+  train = False
   sequence = True
-  dataset = "small"
+  dataset = "x_small"
   model_name = "model2"
 
   gb = 8
@@ -50,10 +51,10 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
+    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
   else:
-    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE)
+    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
+    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE)
 
   if not train:
     model.load_weights(load_model_path)
