@@ -12,7 +12,7 @@ def prepare_data(training_data_path, input_length, label_length, fs, validation_
       pm = pretty_midi.PrettyMIDI(full_path)
       
       pr = pm.get_piano_roll(fs=fs).transpose()
-      pr = remove_silence(pr, threshold=fs*3)
+      pr = remove_silence(pr, threshold=fs*1)
       pr[pr != 0] = 1
       # create a silence row
       silence_row = np.zeros((pr.shape[0], 1))

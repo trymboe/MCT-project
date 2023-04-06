@@ -35,7 +35,7 @@ def create_model_sequence(input_length, learning_rate):
     inputs = tf.keras.Input(input_shape)
 
     x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
-    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
 
@@ -66,7 +66,7 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=125,
+        patience=5,
         verbose=1,
         restore_best_weights=True),
     ]

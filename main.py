@@ -15,21 +15,21 @@ VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-TEMPERATURE = 1
+TEMPERATURE = 0.5
 PROB = 0.3
 
 
-NUM_PREDICTIONS = 20
-EPOCHS = 25
-INPUT_LENGTH = 20
+NUM_PREDICTIONS = 150
+EPOCHS = 50
+INPUT_LENGTH = 60
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
 if __name__  == "__main__":
   train = False
-  sequence = True
+  sequence = False
   dataset = "x_small"
-  model_name = "model2"
+  model_name = "model1"
 
   gb = 8
 
@@ -53,7 +53,10 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
   else:
-    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
+    if train:
+      train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
+    else:
+      train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE)
 
   if not train:
@@ -62,7 +65,7 @@ if __name__  == "__main__":
       train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}", EPOCHS)
 
   if not train:
-    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
+    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence, temp=TEMPERATURE)
     pm = piano_roll_to_pretty_midi(generated_notes.transpose(), FS)
 
     pm.write(out_file+".mid")
