@@ -8,7 +8,13 @@ def create_model(input_length, learning_rate, optimizer):
 
     inputs = tf.keras.Input(input_shape)
 
-    x = tf.keras.layers.LSTM(512)(inputs)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LSTM(512)(x)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
@@ -20,7 +26,7 @@ def create_model(input_length, learning_rate, optimizer):
 
     model = tf.keras.Model(inputs, outputs)
 
-    loss = tf.keras.losses.MeanSquaredError()
+    loss = tf.keras.losses.CategoricalCrossentropy()
 
     if optimizer == "RMS":
         optimizer = tf.keras.optimizers.RMSprop(learning_rate=learning_rate)

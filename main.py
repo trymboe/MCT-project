@@ -20,7 +20,7 @@ seed = 42
 
 # Sampling rate for audio playback
 FS = 16000
-EPOCHS = 100
+EPOCHS = 50
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.001
 VOCAB_SIZE = 128
@@ -29,16 +29,16 @@ KEY_ORDER = ['pitch', 'step', 'duration']
 VALIDATION_SIZE = 0.15
 TEMPERATURE = 1
 
-NUM_PREDICTIONS = 5
+NUM_PREDICTIONS = 50
 INPUT_LENGTH = 20
 
 
 if __name__ == "__main__":
 
   train = False
-  sequence = True
-  dataset = "small"
-  model_name = "model2"
+  sequence = False
+  dataset = "x_small"
+  model_name = "model3"
   optimizer = "Adam"
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}'
