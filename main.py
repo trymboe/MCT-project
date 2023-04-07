@@ -11,12 +11,12 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 BATCH_SIZE = 32
-NUM_PREDICTIONS = 10
+NUM_PREDICTIONS = 150
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 25
-TEMPERATURE = 1
+EPOCHS = 50
+TEMPERATURE = 0.5
 INPUT_LENGTH = 40
 LABEL_LENGTH = 1
 OPTIMIZER = "Adam"
@@ -25,9 +25,9 @@ FS = 12
 
 if __name__  == "__main__":
   train = False
-  sequence = True
-  dataset = "xx_small"
-  model_name = "model2"
+  sequence = False
+  dataset = "small"
+  model_name = "model1"
 
   gb = 8
 
@@ -51,7 +51,12 @@ if __name__  == "__main__":
        train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
   else:
-    train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    if train:
+      train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+    else:
+      train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
+
+
     model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
 
   if not train:
@@ -60,7 +65,7 @@ if __name__  == "__main__":
       train_model(model, train_ds, val_ds, f"models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{OPTIMIZER}", EPOCHS)
 
   if not train:
-    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence)
+    generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence, temp=TEMPERATURE)
     pm = relative_pitch_to_pretty_midi(generated_notes, FS)
 
     pm.write(out_file+".mid")

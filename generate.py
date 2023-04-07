@@ -1,15 +1,16 @@
 import numpy as np
 import tensorflow as tf
 
-def eval_model(model, dataset, input_length, num_predictions=120, sequence=False):
+def eval_model(model, dataset, input_length, num_predictions=120, sequence=False, temp=0):
 
 
     for input_seq, _ in dataset.take(1):
         input_notes = input_seq.numpy()[0]
 
-
+    
     generated_notes = np.empty((input_length,26))
-
+    if not sequence:
+        generated_notes = np.empty((input_length+num_predictions,26))
 
     generated_notes[:input_length, :] = input_notes
 
@@ -18,7 +19,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
 
     # print(len(np.nonzero(input_notes)[1]))
     # print(len(np.nonzero(generated_notes)[1]))
-    print("generated_notes", np.nonzero(generated_notes)[1])
+    # print("generated_notes", np.nonzero(generated_notes)[1])
     for i in range(num_predictions):
         if sequence:
             next_note = predict_next_note_sequence(input_notes, model)
@@ -27,7 +28,7 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
 
             
         else:
-            next_note = predict_next_note(input_notes, model)
+            next_note = predict_next_note(input_notes, model, temp)
             generated_notes[i+input_length] = next_note
             input_notes = np.delete(input_notes, 0, axis=0)
             input_notes = np.append(input_notes, next_note, axis=0)
@@ -36,15 +37,15 @@ def eval_model(model, dataset, input_length, num_predictions=120, sequence=False
     # print("generated_notes", np.nonzero(generated_notes)[1])
     return generated_notes
 
-def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float = 2.0) -> int:
+def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: float) -> int:
     """Generates a note IDs using a trained sequence model."""
-    assert temperature > 0
+    assert temperature >= 0
 
     # Add batch dimension
     inputs = tf.expand_dims(notes, 0)
 
     predictions_logits = model.predict(inputs)
-    max_idx = get_index(predictions_logits, 1)
+    max_idx = get_index(predictions_logits, temperature)
     print("max_idx", max_idx)
     # Create a new array with 1 at the index of the maximum value
     next_note = np.zeros_like(predictions_logits)
@@ -89,12 +90,14 @@ def get_index(prediction_logits, epsilon):
     # Choose the index either greedily or randomly
     chosen_indices = np.where(greedy, max_indices, np.random.choice(indices, size=prediction_logits.shape[0]))
 
-    print(chosen_indices)
-    return chosen_indices
 
-    sorted_indices = np.argsort(prediction_logits)[::-1][0]
+    # return max_indices
+    
+    sorted_indices = np.argsort(prediction_logits)[0]
+    # print(sorted_indices)
     # Choose the first index with probability p, and the second index with probability 1-p
-    if np.random.random() < epsilon:
-        return sorted_indices[0]
+    print(sorted_indices[-1], sorted_indices[-2])
+    if np.random.random() > epsilon:
+        return sorted_indices[-1]
     else:
-        return sorted_indices[1]
+        return sorted_indices[-2]
