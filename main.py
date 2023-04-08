@@ -15,7 +15,7 @@ NUM_PREDICTIONS = 150
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 50
+EPOCHS = 100
 TEMPERATURE = 0.5
 INPUT_LENGTH = 40
 LABEL_LENGTH = 1
@@ -24,9 +24,9 @@ OPTIMIZER = "Adam"
 FS = 12
 
 if __name__  == "__main__":
-  train = False
+  train = True
   sequence = False
-  dataset = "xx_small"
+  dataset = "small"
   model_name = "model3"
 
   gb = 8
