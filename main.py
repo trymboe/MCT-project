@@ -21,15 +21,23 @@ PROB = 0.3
 
 NUM_PREDICTIONS = 150
 EPOCHS = 50
-INPUT_LENGTH = 60
+INPUT_LENGTH = 40
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
 if __name__  == "__main__":
   train = False
   sequence = False
+  big_model = True
   dataset = "x_small"
-  model_name = "model1"
+  if not sequence and not big_model:
+    model_name = "model1"
+  elif sequence and not big_model:
+    model_name = "model2"
+  elif not sequence and big_model:
+    model_name = "model3"
+  elif sequence and big_model:
+    model_name = "model4"
 
   gb = 8
 
@@ -57,7 +65,7 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE)
+    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, model_name)
 
   if not train:
     model.load_weights(load_model_path)

@@ -82,11 +82,11 @@ def get_index(prediction_logits, epsilon):
     # Get the index with the highest probability for each of the 120 distributions
     max_indices = np.argmax(prediction_logits, axis=1)
 
-    # Choose the index either greedily or randomly
-    chosen_indices = np.where(greedy, max_indices, np.random.choice(indices, size=prediction_logits.shape[0]))
+
 
 
     # return max_indices
+    
     
     sorted_indices = np.argsort(prediction_logits)[0]
     # print(sorted_indices)
@@ -95,7 +95,11 @@ def get_index(prediction_logits, epsilon):
     if np.random.random() > epsilon:
         return sorted_indices[-1]
     else:
-        return sorted_indices[-2]
-    
-
+        if np.random.random() > epsilon:
+            return sorted_indices[-2]
+        else:
+            if np.random.random() > epsilon:
+                return sorted_indices[-3]
+            else:
+                return sorted_indices[-4]
 
