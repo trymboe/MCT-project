@@ -109,7 +109,7 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=5,
+        patience=10,
         verbose=1,
         restore_best_weights=True),
     ]

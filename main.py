@@ -15,19 +15,27 @@ NUM_PREDICTIONS = 150
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 100
+EPOCHS = 50
 TEMPERATURE = 0.5
-INPUT_LENGTH = 40
+INPUT_LENGTH = 30
 LABEL_LENGTH = 1
 OPTIMIZER = "Adam"
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
 if __name__  == "__main__":
-  train = True
+  train = False
   sequence = False
+  big_model = True
   dataset = "xx_small"
-  model_name = "model3"
+  if not sequence and not big_model:
+    model_name = "model1"
+  elif sequence and not big_model:
+    model_name = "model2"
+  elif not sequence and big_model:
+    model_name = "model3"
+  elif sequence and big_model:
+    model_name = "model4"
 
   gb = 8
 
