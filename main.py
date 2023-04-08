@@ -26,8 +26,16 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = False
-  dataset = "xx_small"
-  model_name = "model3"
+  big_model = True
+  dataset = "x_small"
+  if not sequence and not big_model:
+    model_name = "model1"
+  elif sequence and not big_model:
+    model_name = "model2"
+  elif not sequence and big_model:
+    model_name = "model3"
+  elif sequence and big_model:
+    model_name = "model4"
 
   gb = 8
 
@@ -57,7 +65,7 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
 
 
-    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
+    model, loss, optimizer = create_model(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER, model_name)
 
   if not train:
     model.load_weights(load_model_path)

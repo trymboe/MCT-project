@@ -103,4 +103,7 @@ def get_index(prediction_logits, epsilon):
         if np.random.random() > epsilon:
             return sorted_indices[-2]
         else:
-            return sorted_indices[-3]
+            if np.random.random() > epsilon:
+                return sorted_indices[-3]
+            else:
+                return sorted_indices[-4]
