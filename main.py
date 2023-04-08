@@ -10,12 +10,12 @@ from model import create_model, create_model_sequence, train_model
 np.set_printoptions(threshold=sys.maxsize)
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 NUM_PREDICTIONS = 150
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
-EPOCHS = 100
+EPOCHS = 50
 TEMPERATURE = 0.5
 INPUT_LENGTH = 40
 LABEL_LENGTH = 1
@@ -24,9 +24,9 @@ OPTIMIZER = "Adam"
 FS = 12
 
 if __name__  == "__main__":
-  train = True
+  train = False
   sequence = False
-  dataset = "small"
+  dataset = "xx_small"
   model_name = "model3"
 
   gb = 8

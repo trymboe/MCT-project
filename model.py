@@ -7,10 +7,19 @@ def create_model(input_length, learning_rate, optimizer):
 
     inputs = tf.keras.Input(input_shape)
 
-    x = tf.keras.layers.LSTM(512)(inputs)
+    x = tf.keras.layers.LSTM(512,return_sequences=True)(inputs)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LSTM(512)(x)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dense(3, activation='linear')(x)
 
     outputs = tf.keras.layers.Dense(26, activation="softmax", name='piano_roll')(x)
 
@@ -46,10 +55,14 @@ def create_model_sequence(input_length, learning_rate, optimizer):
     x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LSTM(512)(x)
+    x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
     x = tf.keras.layers.Dropout(0.3)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dense(3, activation='linear')(x)
+
 
     outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(26, activation="softmax", name='piano_roll'))(x)
 

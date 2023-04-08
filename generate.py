@@ -96,8 +96,11 @@ def get_index(prediction_logits, epsilon):
     sorted_indices = np.argsort(prediction_logits)[0]
     # print(sorted_indices)
     # Choose the first index with probability p, and the second index with probability 1-p
-    print(sorted_indices[-1], sorted_indices[-2])
+    print(sorted_indices[-1], sorted_indices[-2], sorted_indices[-3])
     if np.random.random() > epsilon:
         return sorted_indices[-1]
     else:
-        return sorted_indices[-2]
+        if np.random.random() > epsilon:
+            return sorted_indices[-2]
+        else:
+            return sorted_indices[-3]
