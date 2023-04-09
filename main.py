@@ -17,17 +17,17 @@ LEARNING_RATE = 0.005
 VOCAB_SIZE = 26
 EPOCHS = 50
 TEMPERATURE = 0.5
-INPUT_LENGTH = 30
+INPUT_LENGTH = 40
 LABEL_LENGTH = 1
 OPTIMIZER = "Adam"
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
 
 if __name__  == "__main__":
-  train = False
-  sequence = False
+  train = True
+  sequence = True
   big_model = True
-  dataset = "xx_small"
+  dataset = "x_small"
   if not sequence and not big_model:
     model_name = "model1"
   elif sequence and not big_model:
@@ -57,7 +57,7 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
        train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER)
+    model, loss, optimizer = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, OPTIMIZER, model_name)
   else:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, LABEL_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)

@@ -55,20 +55,20 @@ def create_model_sequence(input_length, learning_rate, optimizer, model):
 
     inputs = tf.keras.Input(input_shape)
 
-    if model == "model1":
+    if model == "model2":
         x = tf.keras.layers.LSTM(512)(inputs)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-    if model == "model3":
+    if model == "model4":
         x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512)(x)
+        x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.Dense(256, activation='relu')(x)
