@@ -1,0 +1,2 @@
+model_checkpoint_path: "e_60_20_Adam"
+all_model_checkpoint_paths: "e_60_20_Adam"

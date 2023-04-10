@@ -20,7 +20,7 @@ seed = 42
 
 # Sampling rate for audio playback
 FS = 16000
-EPOCHS = 50
+EPOCHS = 60
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.001
 VOCAB_SIZE = 128
@@ -37,24 +37,32 @@ if __name__ == "__main__":
 
   train = False
   sequence = False
-  dataset = "x_small"
-  model_name = "model3"
-  optimizer = "Adam"
+  big_model = True
+  dataset = "small"
+  optimizer= "Adam"
+  if not sequence and not big_model:
+    model_name = "model1"
+  elif sequence and not big_model:
+    model_name = "model2"
+  elif not sequence and big_model:
+    model_name = "model3"
+  elif sequence and big_model:
+    model_name = "model4"
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}'
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}"
-
+  print(out_file)
   if sequence:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, optimizer)
+    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, optimizer, model_name)
   else:
 
     train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
 
-    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, optimizer)
+    model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, optimizer, model_name)
 
   if not train:
     model.load_weights(load_model_path)
