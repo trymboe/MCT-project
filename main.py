@@ -20,9 +20,9 @@ seed = 42
 
 # Sampling rate for audio playback
 FS = 16000
-EPOCHS = 40
+EPOCHS = 100
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.005
 VOCAB_SIZE = 128
 BATCH_SIZE = 64
 KEY_ORDER = ['pitch', 'step', 'duration']
@@ -36,7 +36,7 @@ INPUT_LENGTH = 25
 if __name__ == "__main__":
 
   train = True
-  sequence = False
+  sequence = True
   big_model = True
   dataset = "medium"
   optimizer= "Adam"
