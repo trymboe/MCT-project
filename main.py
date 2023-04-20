@@ -23,7 +23,7 @@ PROB = 0.3
 NUM_PREDICTIONS = 100 
 EPOCHS = 15
 INPUT_LENGTH = 40
-# 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
+
 FS = 12
 
 if __name__  == "__main__":
