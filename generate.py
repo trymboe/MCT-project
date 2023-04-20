@@ -60,6 +60,7 @@ def predict_next_note(notes: np.ndarray, model: tf.keras.Model, temperature: flo
 
     predictions = model.predict(inputs)[0][0]
 
+
     pitch = predictions[0]
     step = predictions[1]
     duration = predictions[2]

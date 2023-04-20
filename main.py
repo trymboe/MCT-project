@@ -20,7 +20,7 @@ seed = 42
 
 # Sampling rate for audio playback
 FS = 16000
-EPOCHS = 100
+EPOCHS = 50
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 128
@@ -30,15 +30,17 @@ VALIDATION_SIZE = 0.15
 TEMPERATURE = 1
 
 NUM_PREDICTIONS = 50
-INPUT_LENGTH = 25
+INPUT_LENGTH = 15
 
+# np.random.seed(42)
+# tf.random.set_seed(42)
 
 if __name__ == "__main__":
 
-  train = True
-  sequence = True
+  train = False
+  sequence = False
   big_model = True
-  dataset = "medium"
+  dataset = "small"
   optimizer= "Adam"
   if not sequence and not big_model:
     model_name = "model1"
