@@ -21,16 +21,16 @@ PROB = 0.3
 
 
 NUM_PREDICTIONS = 100 
-EPOCHS = 15
+EPOCHS = 50
 INPUT_LENGTH = 40
 
 FS = 12
 
 if __name__  == "__main__":
-  train = False
+  train = True
   sequence = False
   big_model = True
-  dataset = "x_small"
+  dataset = "small"
   if not sequence and not big_model:
     model_name = "model1"
   elif sequence and not big_model:
