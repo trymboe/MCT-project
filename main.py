@@ -25,9 +25,9 @@ FS = 12
 
 if __name__  == "__main__":
   train = True
-  sequence = True
+  sequence = False
   big_model = True
-  dataset = "x_small"
+  dataset = "small"
   if not sequence and not big_model:
     model_name = "model1"
   elif sequence and not big_model:

@@ -13,16 +13,15 @@ def create_model(input_length, learning_rate, optimizer, model):
         x = tf.keras.layers.Dense(256, activation='relu')(x)
 
     if model == "model3":
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
+        x = tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu')(inputs)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.LSTM(units=512, return_sequences=True)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+        x = tf.keras.layers.LSTM(units=512)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512)(x)
-        x = tf.keras.layers.Dropout(0.3)(x)
-        x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.Dense(256, activation='relu')(x)
+        x = tf.keras.layers.Dense(units=256, activation='relu')(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.Dense(3, activation='linear')(x)
@@ -109,7 +108,7 @@ def train_model(model, train_ds, val_ds, save_model_path, epochs):
     tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=10,
+        patience=15,
         verbose=1,
         restore_best_weights=True),
     ]
