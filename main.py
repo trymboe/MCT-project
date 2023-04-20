@@ -10,17 +10,18 @@ from model import create_model, create_model_sequence, train_model
 np.set_printoptions(threshold=sys.maxsize)
 
 
+
 BATCH_SIZE = 64
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-TEMPERATURE = 0.5
+TEMPERATURE = 1
 PROB = 0.3
 
 
-NUM_PREDICTIONS = 150
-EPOCHS = 50
+NUM_PREDICTIONS = 100 
+EPOCHS = 15
 INPUT_LENGTH = 40
 # 120 bpm, 2 bps, 3*2 (represent triplets), 6*2 (nyqvist rate)
 FS = 12
