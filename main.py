@@ -16,7 +16,7 @@ VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-TEMPERATURE = 1
+TEMPERATURE = 0.5
 PROB = 0.3
 
 
@@ -27,7 +27,7 @@ INPUT_LENGTH = 40
 FS = 12
 
 if __name__  == "__main__":
-  train = True
+  train = False
   sequence = False
   big_model = True
   dataset = "small"
