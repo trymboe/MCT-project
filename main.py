@@ -20,7 +20,7 @@ seed = 42
 
 # Sampling rate for audio playback
 FS = 16000
-EPOCHS = 50
+EPOCHS = 100
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 128
@@ -37,8 +37,8 @@ INPUT_LENGTH = 15
 
 if __name__ == "__main__":
 
-  train = False
-  sequence = False
+  train = True
+  sequence = True
   big_model = True
   dataset = "small"
   optimizer= "Adam"
