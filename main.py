@@ -21,14 +21,14 @@ PROB = 0.3
 
 
 NUM_PREDICTIONS = 100 
-EPOCHS = 150
+EPOCHS = 100
 INPUT_LENGTH = 40
 
 FS = 12
 
 if __name__  == "__main__":
   train = True
-  sequence = False
+  sequence = True
   big_model = True
   dataset = "small"
   if not sequence and not big_model:
@@ -60,7 +60,7 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE)
+    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, model_nam)
   else:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
