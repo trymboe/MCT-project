@@ -38,7 +38,7 @@ if __name__ == "__main__":
   train = True
   sequence = True
   big_model = True
-  dataset = "medium"
+  dataset = "small"
   optimizer= "Adam"
   if not sequence and not big_model:
     model_name = "model1"

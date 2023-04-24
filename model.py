@@ -15,10 +15,9 @@ def create_model(input_length, learning_rate, optimizer, model):
         x = tf.keras.layers.Dense(256, activation='relu')(x)
 
     if model == "model3":
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
-        x = tf.keras.layers.Dropout(0.3)(x)
+        x = tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu')(inputs)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+        x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.LSTM(512)(x)
@@ -27,7 +26,7 @@ def create_model(input_length, learning_rate, optimizer, model):
         x = tf.keras.layers.Dense(256, activation='relu')(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.Dense(3, activation='linear')(x)
+
 
     outputs = tf.keras.layers.Dense(3, activation="softmax")(x)
     outputs = tf.keras.layers.Reshape((1, 3))(outputs)
@@ -67,19 +66,18 @@ def create_model_sequence(input_length, learning_rate, optimizer, model):
         x = tf.keras.layers.Dense(256, activation='relu')(x)
 
     if model == "model4":
+        x = tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu')(inputs)
+        x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.LSTM(512, return_sequences=True)(inputs)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
-        x = tf.keras.layers.Dropout(0.3)(x)
-        x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.LSTM(512, return_sequences=True)(x)
+        x = tf.keras.layers.LSTM(512)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.Dense(256, activation='relu')(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.Dense(3, activation='linear')(x)
+
 
     outputs = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(3, activation="softmax"))(x)
 
