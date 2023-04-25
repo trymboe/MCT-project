@@ -72,13 +72,14 @@ def predict_next_note_sequence(notes: np.ndarray, model: tf.keras.Model, tempera
 def get_index(prediction_logits, epsilon):
     # # Find the indices of the k highest probabilities
     # prediction_logits = prediction_logits[0]
-    # k = 50
+    # k = 10
     # top_k_indices = np.argsort(prediction_logits)[::-1][:k]
 
     # # Get the corresponding probabilities
     # top_k_probabilities = [prediction_logits[i] for i in top_k_indices]
 
     # top_k_probabilities_normalized = np.array([p / sum(top_k_probabilities) for p in top_k_probabilities])
+
 
     # # Get the index of the highest probability
     # highest_index = np.argmax(top_k_probabilities_normalized)
@@ -121,7 +122,7 @@ def get_index(prediction_logits, epsilon):
     sorted_indices = np.argsort(prediction_logits)[0]
     # print(sorted_indices)
     # Choose the first index with probability p, and the second index with probability 1-p
-    print(sorted_indices[-1], sorted_indices[-2])
+    print(sorted_indices[-1], sorted_indices[-2],sorted_indices[-3], sorted_indices[-4])
     if np.random.random() > epsilon:
         return sorted_indices[-1]
     else:
@@ -131,5 +132,5 @@ def get_index(prediction_logits, epsilon):
             if np.random.random() > epsilon:
                 return sorted_indices[-3]
             else:
-                return sorted_indices[-3]
+                return sorted_indices[-4]
 

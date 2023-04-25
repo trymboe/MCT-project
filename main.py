@@ -20,14 +20,14 @@ TEMPERATURE = 0.5
 PROB = 0.3
 
 
-NUM_PREDICTIONS = 100 
+NUM_PREDICTIONS = 60 
 EPOCHS = 50
 INPUT_LENGTH = 41
 
 FS = 12
 
 if __name__  == "__main__":
-  train = True
+  train = False
   sequence = False
   big_model = True
   dataset = "small"
@@ -60,12 +60,12 @@ if __name__  == "__main__":
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
       train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, INPUT_LENGTH, FS, VALIDATION_SIZE, BATCH_SIZE)
-    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, model_nam)
+    model, loss, _ = create_model_sequence(INPUT_LENGTH, LEARNING_RATE, model_name)
   else:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
-      train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
+      train_ds, val_ds = prepare_data(f"data/melody/xx_small", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, model_name)
 
   if not train:
