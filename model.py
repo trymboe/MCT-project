@@ -8,13 +8,11 @@ def create_model(input_length, learning_rate, model):
     inputs = tf.keras.Input(input_shape)
 
     if model == "model1":
-        x = tf.keras.layers.LSTM(512)(inputs)
+        x = tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu')(inputs)
+        x = tf.keras.layers.LSTM(512)(x)
         x = tf.keras.layers.Dropout(0.3)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = tf.keras.layers.Dense(256, activation='relu')(x)
-        x = tf.keras.layers.Dropout(0.3)(x)
-        x = tf.keras.layers.BatchNormalization()(x)
-        x = tf.keras.layers.Dense(3, activation='linear')(x)
     
     if model == "model3":
 

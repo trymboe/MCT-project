@@ -70,40 +70,40 @@ def predict_next_note_sequence(notes: np.ndarray, model: tf.keras.Model, tempera
     return predictions
 
 def get_index(prediction_logits, epsilon):
-    # Find the indices of the k highest probabilities
-    prediction_logits = prediction_logits[0]
-    k = 5
-    top_k_indices = np.argsort(prediction_logits)[::-1][:k]
+    # # Find the indices of the k highest probabilities
+    # prediction_logits = prediction_logits[0]
+    # k = 5
+    # top_k_indices = np.argsort(prediction_logits)[::-1][:k]
 
-    # Get the corresponding probabilities
-    top_k_probabilities = [prediction_logits[i] for i in top_k_indices]
+    # # Get the corresponding probabilities
+    # top_k_probabilities = [prediction_logits[i] for i in top_k_indices]
 
-    top_k_probabilities_normalized = np.array([p / sum(top_k_probabilities) for p in top_k_probabilities])
+    # top_k_probabilities_normalized = np.array([p / sum(top_k_probabilities) for p in top_k_probabilities])
 
 
-    # Get the index of the highest probability
-    highest_index = np.argmax(top_k_probabilities_normalized)
+    # # Get the index of the highest probability
+    # highest_index = np.argmax(top_k_probabilities_normalized)
 
-    # Create a one-hot vector with the same length as the original list
-    one_hot = np.zeros_like(top_k_probabilities_normalized)
-    for i in range(len(one_hot)):
-        one_hot[i] = 1/len(one_hot)
-    # one_hot[highest_index] = 1
+    # # Create a one-hot vector with the same length as the original list
+    # one_hot = np.zeros_like(top_k_probabilities_normalized)
+    # for i in range(len(one_hot)):
+    #     one_hot[i] = 1/len(one_hot)
+    # # one_hot[highest_index] = 1
 
-    # Interpolate between the original probabilities and the one-hot vector
-    new_probabilities = epsilon * top_k_probabilities_normalized + (1 - epsilon) * one_hot
+    # # Interpolate between the original probabilities and the one-hot vector
+    # new_probabilities = epsilon * top_k_probabilities_normalized + (1 - epsilon) * one_hot
 
-    # Normalize the new probabilities to make them add up to 1
-    new_probabilities /= np.sum(new_probabilities)
+    # # Normalize the new probabilities to make them add up to 1
+    # new_probabilities /= np.sum(new_probabilities)
 
-    # exit()
-    # Randomly choose an index based on the weights
-    chosen_index = np.random.choice(top_k_indices, p=new_probabilities)
+    # # exit()
+    # # Randomly choose an index based on the weights
+    # chosen_index = np.random.choice(top_k_indices, p=new_probabilities)
     
-    print(chosen_index)
+    # print(chosen_index)
 
 
-    return chosen_index
+    # return chosen_index
 
 
 

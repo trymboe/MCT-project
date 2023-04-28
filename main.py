@@ -16,12 +16,12 @@ VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
 NOISE_SCALE = 1
 VOCAB_SIZE = 129
-TEMPERATURE = 0.7
+TEMPERATURE = 0.25
 PROB = 0.3
 
 
 NUM_PREDICTIONS = 60 
-EPOCHS = 100
+EPOCHS = 30
 INPUT_LENGTH = 40
 
 FS = 12
@@ -29,8 +29,8 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = False
-  big_model = True
-  dataset = "small"
+  big_model = False
+  dataset = "x_small"
   if not sequence and not big_model:
     model_name = "model1"
   elif sequence and not big_model:
@@ -65,7 +65,7 @@ if __name__  == "__main__":
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     else:
-      train_ds, val_ds = prepare_data(f"data/melody/xx_small", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
+      train_ds, val_ds = prepare_data(f"data/melody/test", INPUT_LENGTH, 1, FS, VALIDATION_SIZE, BATCH_SIZE)
     model, loss, _ = create_model(INPUT_LENGTH, LEARNING_RATE, model_name)
 
   if not train:
