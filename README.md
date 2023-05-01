@@ -54,8 +54,7 @@ sequence     : False
 big_model    : True
 dataset      : "small"
 EPOCHS       : 100
-optimizer    : "Adam"
-INPUT_LENGTH : 25
+INPUT_LENGTH : 40
 
 The results can be found in results/melody/model3/small
 
