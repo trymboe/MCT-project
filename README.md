@@ -32,9 +32,6 @@ These parameters can be set as is, and are used when experimenting with differen
 
 **sequence:** True if you want the train or evaluate a model that predicts a sequence of notes/timesteps. The predicted sequence is if equal length to the input length of the model. A model trained on sequence can only predict sequences, and vice versa. Default False.
 
-**optimizer:** What optimizer should be used. Only for training.
-"RMS"  : RMSprop
-"Adam" : Adam
 
 **FS:** The sampling rate for piano roll sampling. Default 12.
 
