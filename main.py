@@ -11,7 +11,7 @@ seed = 42
 # tf.random.set_seed(seed)
 # np.random.seed(seed)
 
-EPOCHS = 100
+EPOCHS = 60
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 128
@@ -20,7 +20,7 @@ KEY_ORDER = ['pitch', 'step', 'duration']
 VALIDATION_SIZE = 0.15
 
 NUM_PREDICTIONS = 50
-INPUT_LENGTH = 25
+INPUT_LENGTH = 20
 
 if __name__ == "__main__":
 
