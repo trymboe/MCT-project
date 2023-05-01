@@ -1,13 +1,6 @@
-import os
-import argparse
-import pretty_midi
-import numpy as np
 import absl.logging
-import pandas as pd
-import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from tensorflow import keras
 from model import create_model, create_model_sequence, train_model
 from data_process import prepare_data, notes_to_midi
 from generate import eval_model
@@ -18,22 +11,16 @@ seed = 42
 # tf.random.set_seed(seed)
 # np.random.seed(seed)
 
-# Sampling rate for audio playback
-FS = 16000
-EPOCHS = 60
+EPOCHS = 100
 MIDI_INSTRUMENT = "Acoustic Grand Piano"
 LEARNING_RATE = 0.005
 VOCAB_SIZE = 128
 BATCH_SIZE = 64
 KEY_ORDER = ['pitch', 'step', 'duration']
 VALIDATION_SIZE = 0.15
-TEMPERATURE = 1
 
 NUM_PREDICTIONS = 50
-INPUT_LENGTH = 20
-
-# np.random.seed(42)
-# tf.random.set_seed(42)
+INPUT_LENGTH = 25
 
 if __name__ == "__main__":
 
@@ -53,7 +40,7 @@ if __name__ == "__main__":
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}'
   out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}_{optimizer}"
-  print(out_file)
+
   if sequence:
     if train:
       train_ds, val_ds = prepare_data(f"data/melody/{dataset}", INPUT_LENGTH, INPUT_LENGTH, VOCAB_SIZE, VALIDATION_SIZE, BATCH_SIZE)
