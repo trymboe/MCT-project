@@ -38,7 +38,7 @@ if __name__  == "__main__":
 
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}'
-  out_file = f"results/melody/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
+  out_file = f"results/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}"
 
   if sequence:
     if train:
