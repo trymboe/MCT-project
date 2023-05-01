@@ -11,17 +11,13 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 
+EPOCHS = 100
 BATCH_SIZE = 64
 VALIDATION_SIZE = 0.15
 LEARNING_RATE = 0.005
-NOISE_SCALE = 1
-VOCAB_SIZE = 129
-TEMPERATURE = 0.25
-PROB = 0.3
-
+TEMPERATURE = 0.5
 
 NUM_PREDICTIONS = 60 
-EPOCHS = 30
 INPUT_LENGTH = 40
 
 FS = 12
@@ -29,8 +25,8 @@ FS = 12
 if __name__  == "__main__":
   train = False
   sequence = False
-  big_model = False
-  dataset = "x_small"
+  big_model = True
+  dataset = "small"
   if not sequence and not big_model:
     model_name = "model1"
   elif sequence and not big_model:
@@ -39,17 +35,6 @@ if __name__  == "__main__":
     model_name = "model3"
   elif sequence and big_model:
     model_name = "model4"
-
-  gb = 8
-
-  os.environ['TF_DEVICE']='/gpu:0'
-  gpus = tf.config.list_physical_devices('GPU')
-  if gpus:
-      gpu = gpus[0]
-      # Limit GPU memory to n*1GB
-      tf.config.experimental.set_virtual_device_configuration(gpu, [
-          tf.config.experimental.VirtualDeviceConfiguration(memory_limit=gb*1024)
-      ])
 
 
   load_model_path = f'models/{model_name}/{dataset}/e_{EPOCHS}_{INPUT_LENGTH}'
@@ -75,7 +60,7 @@ if __name__  == "__main__":
 
   if not train:
     generated_notes = eval_model(model, train_ds, INPUT_LENGTH, num_predictions=NUM_PREDICTIONS, sequence=sequence, temp=TEMPERATURE)
-    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), FS)
+    pm = piano_roll_to_pretty_midi(generated_notes.transpose(), FS/2)
 
     pm.write(out_file+".mid")
 
