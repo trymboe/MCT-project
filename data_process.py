@@ -5,6 +5,21 @@ import tensorflow as tf
 
 
 def prepare_data(training_data_path, input_length, label_length, fs, validation_size, batch_size):
+  """
+  Prepare data for training a neural network on MIDI music files.
+
+  Parameters:
+  training_data_path (str): The path to the directory containing the training MIDI files.
+  input_length (int): The length of each input sequence in number of time steps.
+  label_length (int): The length of each output label sequence in number of time steps.
+  fs (int): The desired sampling frequency of the piano roll representation.
+  validation_size (float): The proportion of the data to be used for validation.
+  batch_size (int): The size of the batches in which the data will be split for training.
+
+  Returns:
+  tuple: A tuple containing the training dataset and validation dataset.
+
+  """
   all_rolls = []
   for i in os.listdir(training_data_path):
     full_path = training_data_path+'/'+i
@@ -103,10 +118,17 @@ def create_sequences(piano_rolls, input_length, label_length):
     return dataset
 
 def split_data(dataset, validation_size, batch_size):
-  '''
-  This function creates and trains a model with all midi files found in the given path.
-  The model is saved in the training_checkpoint folder.
-  '''
+  """
+  Splits the given dataset into training and validation sets, and batches them.
+
+  Args:
+      dataset (tf.data.Dsataset): The input dataset to be split and batched.
+      validation_size (float): The proportion of the dataset to be used for validation.
+      batch_size (int): The size of each batch.
+
+  Returns:
+      tuple: A tuple of two `tf.data.Dataset` objects - the training dataset and the validation dataset.
+  """
   dataset = dataset.shuffle(buffer_size=len(list(dataset)))
   
   # Split dataset into training and validation sets
@@ -179,6 +201,15 @@ def piano_roll_to_pretty_midi(piano_roll, fs, program=0):
     return pm
 
 def get_relative_pitch(pr):
+  '''
+  The get_relative_pitch function takes in a list of piano roll matrices as input and returns a list of matrices, where each matrix is the corresponding relative pitch matrix.
+
+  Args:
+    pr: A list of piano roll matrices
+  
+  Returns:
+    all_rolls: A list of matrices where each matrix is the corresponding relative pitch matrix
+  '''
   count = 0
   all_rolls = []
   for song in pr:
@@ -210,6 +241,16 @@ def get_relative_pitch(pr):
   return all_rolls
 
 def relative_pitch_to_pretty_midi(pr, fs):
+  """Converts a piano roll represented in relative pitch notation to a PrettyMIDI object.
+
+  Args:
+      pr (numpy.ndarray): A two-dimensional numpy array representing a piano roll in relative pitch notation. 
+                          The shape of the array should be (num_time_steps, num_pitches).
+      fs (int): The sampling rate of the piano roll in Hertz.
+
+  Returns:
+      pretty_midi.PrettyMIDI: A PrettyMIDI object generated from the input piano roll in relative pitch notation.
+  """
   prev_note = 60
   new_song = np.zeros((pr.shape[0],128))
 
