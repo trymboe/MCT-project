@@ -5,6 +5,21 @@ import tensorflow as tf
 
 
 def prepare_data(training_data_path, input_length, label_length, fs, validation_size, batch_size):
+  """
+  Prepare data for training a neural network on MIDI music files.
+
+  Parameters:
+  training_data_path (str): The path to the directory containing the training MIDI files.
+  input_length (int): The length of each input sequence in number of time steps.
+  label_length (int): The length of each output label sequence in number of time steps.
+  fs (int): The desired sampling frequency of the piano roll representation.
+  validation_size (float): The proportion of the data to be used for validation.
+  batch_size (int): The size of the batches in which the data will be split for training.
+
+  Returns:
+  tuple: A tuple containing the training dataset and validation dataset.
+
+  """
   all_rolls = []
   for i in os.listdir(training_data_path):
     full_path = training_data_path+'/'+i
@@ -104,10 +119,17 @@ def create_sequences(piano_rolls, input_length, label_length):
     return dataset
 
 def split_data(dataset, validation_size, batch_size):
-  '''
-  This function creates and trains a model with all midi files found in the given path.
-  The model is saved in the training_checkpoint folder.
-  '''
+  """
+  Splits the given dataset into training and validation sets, and batches them.
+
+  Args:
+      dataset (tf.data.Dataset): The input dataset to be split and batched.
+      validation_size (float): The proportion of the dataset to be used for validation.
+      batch_size (int): The size of each batch.
+
+  Returns:
+      tuple: A tuple of two `tf.data.Dataset` objects - the training dataset and the validation dataset.
+  """
   dataset = dataset.shuffle(buffer_size=len(list(dataset)))
   
   # Split dataset into training and validation sets
