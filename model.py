@@ -3,6 +3,20 @@ import matplotlib.pyplot as plt
 
 
 def create_model(input_length, learning_rate, optimizer, model):
+    """
+    Creates a deep learning model for generating music.
+
+    Args:
+    input_length (int): The length of the input sequence.
+    learning_rate (float): The learning rate for the optimizer.
+    optimizer (str): The name of the optimizer to use for training.
+    model (str): The name of the model architecture to use for the model.
+
+    Returns:
+    model (tf.keras.Model): The compiled deep learning model.
+    loss (tf.keras.losses): The chosen loss function for training.
+    optimizer (tf.keras.optimizers): The chosen optimizer for training.
+    """
     input_shape = (input_length, 3)
     
 
@@ -68,6 +82,7 @@ def create_model(input_length, learning_rate, optimizer, model):
 
     return model, loss, optimizer
 
+#Discontinued
 def create_model_sequence(input_length, learning_rate, optimizer, model):
     input_shape = (input_length, 3)
 
@@ -120,7 +135,19 @@ def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
   return tf.reduce_mean(mse + positive_pressure)
 
 def train_model(model, train_ds, val_ds, save_model_path, epochs):
+    """
+    Train a Keras model using the provided training and validation datasets.
 
+    Args:
+    model: A Keras model to be trained.
+    train_ds: A tf.data.Dataset object containing the training data.
+    val_ds: A tf.data.Dataset object containing the validation data.
+    save_model_path: A string representing the path where the trained model should be saved.
+    epochs: An integer representing the number of epochs to train the model for.
+
+    Returns:
+    None.
+    """
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath='./training_checkpoints/ckpt_{epoch}',
